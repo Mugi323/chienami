@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="docs/images/chienami_logo_2.PNG" alt="Chienami logo" width="480">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/chienami_logo_2_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/chienami_logo_2_light.png">
+    <img src="docs/images/chienami_logo_2_light.png" alt="Chienami logo" width="480">
+  </picture>
 </p>
 
 <p align="center">
