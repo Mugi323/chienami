@@ -20,6 +20,3 @@ Thumbs.db
 # エディタ
 .vscode/
 .idea/
-
-# 設計書（バイナリ）
-docs/design/
