@@ -1,0 +1,25 @@
+# 環境変数・シークレット
+.env
+.env.*
+*.secret
+secrets/
+
+# データディレクトリ（本番サーバー上のデータ）
+data/
+models/
+backup/
+
+# ログ
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# エディタ
+.vscode/
+.idea/
+
+# 設計書（バイナリ）
+docs/design/
