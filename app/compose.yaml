@@ -1,0 +1,44 @@
+services:
+  outline:
+    image: docker.getoutline.com/outlinewiki/outline:1.10.0
+    restart: unless-stopped
+    env_file: ./config/docker.env
+    ports:
+      # Phase 1暫定: Reverse Proxy導入(#14)までのローカル動作確認用。LANへは公開しない。
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - storage-data:/var/lib/outline/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:18
+    restart: unless-stopped
+    env_file: ./config/docker.env
+    expose:
+      - "5432"
+    volumes:
+      - database-data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-d", "outline", "-U", "outline"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  redis:
+    image: redis:8.10-alpine
+    restart: unless-stopped
+    expose:
+      - "6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 30s
+      retries: 3
+
+volumes:
+  storage-data:
+  database-data:
