@@ -2,6 +2,7 @@
 .env
 .env.*
 docker.env
+authentik.env
 *.secret
 secrets/
 

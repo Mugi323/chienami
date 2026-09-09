@@ -1,0 +1,17 @@
+# デフォルトBrandの表示言語を日本語にするBlueprint。
+# 個々のユーザーはログイン画面等で言語を切り替え可能だが、未設定時のデフォルトをここで日本語にする。
+#
+# 注: Brand.attributes はJSONFieldで、このBlueprintは attributes 全体を上書きする。
+# 将来 attributes に他の設定を追加する場合は、このBlueprintも合わせて更新すること。
+version: 1
+metadata:
+  name: デフォルト言語を日本語に設定
+entries:
+  - model: authentik_brands.brand
+    identifiers:
+      default: true
+    state: present
+    attrs:
+      attributes:
+        settings:
+          locale: ja
