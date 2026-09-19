@@ -39,6 +39,58 @@ services:
       timeout: 30s
       retries: 3
 
+  # --- Authentik（ローカル認証基盤, Issue #21） ---
+  # OutlineのログインをOIDC経由で行うためのセルフホストIdP。外部OIDCは使用せず、
+  # Docker内部ネットワークに閉じて動作させる（研究データを外部クラウドへ送らない方針）。
+  # authentik-postgres / authentik-server / authentik-worker は専用の
+  # config/authentik.env を使う（docker.envと同じ変数名(POSTGRES_DB等)を
+  # 別の値で必要とするため、1ファイル共有にすると値が衝突する）。
+  authentik-postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    env_file: ./config/authentik.env
+    expose:
+      - "5432"
+    volumes:
+      - authentik-database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  authentik-server:
+    image: ghcr.io/goauthentik/server:2026.8.1
+    restart: unless-stopped
+    command: server
+    env_file: ./config/authentik.env
+    ports:
+      # Phase 1暫定: Reverse Proxy導入(#14)までのローカル動作確認用。LANへは公開しない。
+      - "127.0.0.1:9000:9000"
+    volumes:
+      - authentik-data:/data
+      # 日本語化・招待制セルフ登録フロー等をコードとして管理するBlueprint（読み取り専用）。
+      - ./authentik/blueprints:/blueprints/custom:ro
+    depends_on:
+      authentik-postgres:
+        condition: service_healthy
+
+  authentik-worker:
+    image: ghcr.io/goauthentik/server:2026.8.1
+    restart: unless-stopped
+    command: worker
+    env_file: ./config/authentik.env
+    # 注: 公式compose.ymlはoutpost管理用にホストの/var/run/docker.sockをworkerへマウントするが、
+    # 本構成では組み込みoutpost（Outline連携）のみを使うため、権限最小化のためマウントしない。
+    volumes:
+      - authentik-data:/data
+      - ./authentik/blueprints:/blueprints/custom:ro
+    depends_on:
+      authentik-postgres:
+        condition: service_healthy
+
 volumes:
   storage-data:
   database-data:
+  authentik-database-data:
+  authentik-data:
