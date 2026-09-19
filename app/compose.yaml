@@ -3,9 +3,9 @@ services:
     image: docker.getoutline.com/outlinewiki/outline:1.10.0
     restart: unless-stopped
     env_file: ./config/docker.env
-    ports:
-      # Phase 1暫定: Reverse Proxy導入(#14)までのローカル動作確認用。LANへは公開しない。
-      - "127.0.0.1:3000:3000"
+    expose:
+      # Reverse Proxy（Issue #14）経由のみでアクセスさせる。ホストへは公開しない。
+      - "3000"
     volumes:
       - storage-data:/var/lib/outline/data
     depends_on:
@@ -64,9 +64,9 @@ services:
     restart: unless-stopped
     command: server
     env_file: ./config/authentik.env
-    ports:
-      # Phase 1暫定: Reverse Proxy導入(#14)までのローカル動作確認用。LANへは公開しない。
-      - "127.0.0.1:9000:9000"
+    expose:
+      # Reverse Proxy（Issue #14）経由のみでアクセスさせる。ホストへは公開しない。
+      - "9000"
     volumes:
       - authentik-data:/data
       # 日本語化・招待制セルフ登録フロー等をコードとして管理するBlueprint（読み取り専用）。
@@ -89,8 +89,25 @@ services:
       authentik-postgres:
         condition: service_healthy
 
+  # --- Reverse Proxy（研究室LAN内アクセス, Issue #14） ---
+  # knowledge.lab.local -> Outline、auth.lab.local -> Authentik へルーティングする。
+  # Phase 1暫定: TLS未対応（HTTP）。ホストのファイアウォールでLAN外からの80番アクセスを
+  # 遮断すること（研究室LANからのみ許可）。
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on:
+      - outline
+      - authentik-server
+
 volumes:
   storage-data:
   database-data:
   authentik-database-data:
   authentik-data:
+  caddy-data:

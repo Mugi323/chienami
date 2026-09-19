@@ -18,10 +18,12 @@ cp config/authentik.env.example config/authentik.env
 
 ## 1. Authentik初回セットアップ
 
-1. `http://localhost:9000/` にアクセスする（初回は自動的にセットアップ画面へリダイレクトされる。`/if/flow/initial-setup/` への直接アクセスは、セッション未初期化のため拒否されることがある）。
+前提: Reverse Proxy（Issue #14）導入済みで、`auth.lab.local` / `knowledge.lab.local` が名前解決できること（`docs/design/reverse-proxy-setup.md` 参照）。
+
+1. `http://auth.lab.local/` にアクセスする（初回は自動的にセットアップ画面へリダイレクトされる。`/if/flow/initial-setup/` への直接アクセスは、セッション未初期化のため拒否されることがある）。
 2. 管理者（`akadmin`）のメールアドレス・パスワードを設定する。
    - メールアドレスは実在しなくてもよい（外部への送信は発生しない）。
-3. 管理画面（`http://localhost:9000/if/admin/`）にログインできることを確認する。
+3. 管理画面（`http://auth.lab.local/if/admin/`）にログインできることを確認する。
 
 ## 2. Outline用 OIDC Provider / Application の作成
 
@@ -34,8 +36,7 @@ cp config/authentik.env.example config/authentik.env
      implicit-consentが適切。外部の信頼できないアプリを連携する場合は
      explicit-consent（同意画面あり）を使う。）
    - **Client type**: `Confidential`
-   - **Redirect URIs**: `http://localhost:3000/auth/oidc.callback`
-     （Reverse Proxy導入(#14)後は `https://knowledge.lab.local/auth/oidc.callback` へ変更する）
+   - **Redirect URIs**: `http://knowledge.lab.local/auth/oidc.callback`
    - **Scopes**: `openid`, `email`, `profile` を含める。
 4. 保存後に発行される **Client ID** / **Client Secret** を控える。
 5. **Applications > Applications > Create** で以下を設定する。
@@ -58,7 +59,7 @@ OIDC_CLIENT_SECRET=<発行されたClient Secret>
 docker compose up -d --force-recreate outline
 ```
 
-`http://localhost:3000` を開き、ログイン画面に「Authentikでログイン」ボタンが表示されることを確認する。
+`http://knowledge.lab.local` を開き、ログイン画面に「Authentikでログイン」ボタンが表示されることを確認する。
 
 ## 4. 招待リンクによるセルフ登録
 
@@ -71,7 +72,7 @@ docker compose up -d --force-recreate outline
 1. **Directory > Invitations > Create** を開く。
 2. **Flow** に「研究室メンバー登録」を選択する。
 3. 有効期限（例: 学期末まで）や単一/複数回使用可否を設定して発行する。
-4. 発行された招待URL（例: `http://localhost:9000/if/flow/chienami-invite-enrollment/?itoken=<token>`）を研究室内で共有する（対面・学内チャット等。メール送信は行わない）。
+4. 発行された招待URL（例: `http://auth.lab.local/if/flow/chienami-invite-enrollment/?itoken=<token>`）を研究室内で共有する（対面・学内チャット等。メール送信は行わない）。
 
 ### 動作確認
 
