@@ -89,15 +89,17 @@ services:
       authentik-postgres:
         condition: service_healthy
 
-  # --- Reverse Proxy（研究室LAN内アクセス, Issue #14） ---
+  # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik へルーティングする。
-  # Phase 1暫定: TLS未対応（HTTP）。ホストのファイアウォールでLAN外からの80番アクセスを
-  # 遮断すること（研究室LANからのみ許可）。
+  # Caddy内部CAでHTTPS化し、80番はHTTPSへのリダイレクト専用（自動HTTPS機能）として使う。
+  # ホストのファイアウォールでLAN外からの80/443番アクセスを遮断すること
+  # （研究室LANからのみ許可、docs/design/reverse-proxy-setup.md参照）。
   caddy:
     image: caddy:2.10-alpine
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data

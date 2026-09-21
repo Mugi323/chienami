@@ -1,4 +1,4 @@
-# 研究室LAN内アクセス用Reverse Proxy設定（Issue #14）。
+# 研究室LAN内アクセス用Reverse Proxy設定（Issue #14, HTTPS化: Issue #26）。
 #
 # knowledge.lab.local : Outline本体（研究者が直接触るアプリ）
 # auth.lab.local       : Authentik（OIDCログイン画面・招待リンク経由の登録画面）
@@ -7,14 +7,20 @@
 # LAN内の他端末から到達できるホスト名を割り当てる必要がある（127.0.0.1限定のままでは
 # ホストPC以外のブラウザから認可エンドポイント・招待リンクへアクセスできない）。
 #
-# Phase 1暫定: TLSは未対応（HTTP）。*.lab.local は研究室内限定の名前のため、
-# Let's Encrypt等の自動証明書発行は利用できない。TLS化は研究室内CA導入後に別途対応する。
-# http:// を明示し、Caddyの自動HTTPS化（ACME取得の試行）を無効にする。
+# *.lab.local は研究室内限定の名前のため、Let's Encrypt等の公的CAによる自動証明書発行
+# （ACME）は利用できない。代わりにCaddy組み込みの内部CA（tls internal）でサーバ証明書を
+# 自動発行・更新する。研究室メンバーの各端末には、このCaddyが生成したルートCA証明書を
+# 一度だけ信頼登録してもらう必要がある（配布手順: docs/design/reverse-proxy-setup.md）。
+#
+# ホスト名をスキームなしで書くと、Caddyの自動HTTPS機能によりHTTP(80番)→HTTPS(443番)への
+# リダイレクトも自動で設定される。
 
-http://knowledge.lab.local {
+knowledge.lab.local {
+	tls internal
 	reverse_proxy outline:3000
 }
 
-http://auth.lab.local {
+auth.lab.local {
+	tls internal
 	reverse_proxy authentik-server:9000
 }
