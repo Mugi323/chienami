@@ -54,7 +54,7 @@ chienami/
 ├─ app/                  # 実行設定（Git管理）
 │  ├─ reverse-proxy/     # Reverse Proxy設定
 │  ├─ config/            # 各種設定ファイル
-│  └─ scripts/           # 運用スクリプト
+│  └─ scripts/           # 運用スクリプト（setup.sh / start.sh / stop.sh）
 ├─ docs/                 # 運用・設計資料
 │  ├─ system_design_v1.4.md
 │  ├─ design/            # 設計関連資料
@@ -89,3 +89,4 @@ Issue作成 → ブランチ作成 → 実装 → Push → Pull Request → CI �
 ## 関連ドキュメント
 
 - [システム設計書 v1.4](docs/system_design_v1.4.md) — アーキテクチャ、コンポーネント設計、セキュリティ、バックアップ・復旧、導入ロードマップなどの詳細
+- [起動・停止スクリプトの使い方](docs/design/scripts-usage.md) — `app/scripts/` の `setup.sh` / `start.sh` / `stop.sh` の使い方

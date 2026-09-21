@@ -3,18 +3,15 @@
 Issue #21で追加したAuthentikコンテナは、起動しただけではOutlineと連携しません。
 以下の手順を初回のみ手動で行う必要があります（Authentik管理UI上の操作のため、compose.yamlだけでは自動化できません）。
 
-前提: 以下の環境変数ファイルを用意した上で `docker compose up -d` を実行し、全コンテナが起動していること。
-
-```bash
-cd app
-cp config/docker.env.example config/docker.env
-cp config/authentik.env.example config/authentik.env
-```
+前提: 環境変数ファイルを用意した上で全コンテナが起動していること。`./app/scripts/start.sh`
+（内部で環境変数ファイルの生成と `docker compose up -d` を行う）を実行すればよい。詳細は
+[起動・停止スクリプトの使い方](scripts-usage.md) を参照。
 
 `docker.env`（Outline/Outline用PostgreSQL/Redis）と `authentik.env`（Authentik/Authentik専用PostgreSQL）は別ファイルになっている。
 両方とも `POSTGRES_DB` 等、公式postgresイメージが要求する同じ変数名を別の値で使う必要があるため、
 1ファイルに統合すると値が衝突してしまう（Compose自体は `docker.env` を変数展開の対象として読み込まないため、
-`${AUTHENTIK_PG_PASS}` のような書き方はcompose.yaml内では機能しない）。それぞれのファイルに直接、対応する値を記入すること。
+`${AUTHENTIK_PG_PASS}` のような書き方はcompose.yaml内では機能しない）。`setup.sh` がそれぞれのファイルに
+対応する値を自動生成して記入する。
 
 ## 1. Authentik初回セットアップ
 
