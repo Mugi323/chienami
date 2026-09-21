@@ -6,6 +6,9 @@ authentik.env
 *.secret
 secrets/
 
+# クライアント配布用に取り出したルートCA証明書（環境ごとに再生成される、配布物であってGit管理対象ではない）
+*.crt
+
 # データディレクトリ（本番サーバー上のデータ）
 data/
 models/
