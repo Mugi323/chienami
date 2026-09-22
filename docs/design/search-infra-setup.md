@@ -46,7 +46,9 @@ docker compose run --rm --no-deps --entrypoint sh outline -c \
 
 ## 既知の制約
 
-- Qdrant・Embeddingとも索引化ロジック（chienami-indexer）は未実装（別Issue）。本Issueの時点では
-  空のQdrantインスタンスとEmbedding生成のみが起動している状態。
 - Embeddingモデル（Qwen3-Embedding-0.6B）はCPU版イメージで動作する。GPU未搭載サーバでも動作するが、
   大量文書の一括Embedding時は速度が遅くなる可能性がある（design書9節）。
+- `embedding` サービスの起動オプション（`--max-batch-tokens` / `--tokenization-workers`）は、
+  割当メモリが少ない環境（実機検証: WSL2 + Docker Desktop、7.7GB）でウォームアップ時に
+  クラッシュしないよう既定値より絞ってある（Issue #42）。メモリに余裕のあるサーバではより
+  大きい値に緩めてスループットを上げられる可能性がある。
