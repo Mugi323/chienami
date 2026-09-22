@@ -142,6 +142,28 @@ services:
       outline:
         condition: service_started
 
+  # --- chienami-api（Phase 3検索API, Issue #34） ---
+  # クエリをEmbeddingしQdrantから検索するAPI。ブラウザ向けUI・Reverse Proxyでの外部公開は
+  # Issue #4（検索UI）で行うため、本サービスは内部ネットワークのみ（ポートpublishなし）。
+  api:
+    build:
+      context: ./api
+    restart: unless-stopped
+    env_file: ./config/docker.env
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/8000' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+
   # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik へルーティングする。
   # Caddy内部CAでHTTPS化し、80番はHTTPSへのリダイレクト専用（自動HTTPS機能）として使う。
