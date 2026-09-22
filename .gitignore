@@ -18,6 +18,13 @@ backup/
 *.log
 logs/
 
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
 # OS
 .DS_Store
 Thumbs.db
