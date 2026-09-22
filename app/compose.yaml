@@ -164,6 +164,19 @@ services:
       embedding:
         condition: service_healthy
 
+  # --- chienami-eval（Phase 3検索評価ツール, Issue #38） ---
+  # chienami-apiへ質問を投げてRecall@k/MRRを計測するオンデマンドツール。常駐サービスではない
+  # ため profiles で通常の `docker compose up -d` には含めず、`docker compose run --rm eval`
+  # で明示的に実行する（詳細: docs/design/search-eval-setup.md）。
+  eval:
+    build:
+      context: ./eval
+    profiles:
+      - tools
+    env_file: ./config/docker.env
+    volumes:
+      - ./eval/questions.yaml:/app/questions.yaml:ro
+
   # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik、
   # search.lab.local -> Chienami Search（静的UI + /api/* を chienami-api へ, Issue #36）

@@ -1,0 +1,22 @@
+# Chienami Search 検索評価用の質問セット（design書11章）。
+#
+# 使い方:
+#   1. このファイルを questions.yaml としてコピーする
+#      （questions.yaml は .gitignore 対象ではないため、研究室として蓄積したい場合は
+#       コピー後そのままコミットしてよい）。
+#   2. 研究室の実際のOutline文書をもとに、20〜50問程度の「正解が分かっている質問」に
+#      差し替える。expected_urls には、その質問に対する正しい根拠文書のURLを1つ以上
+#      指定する（chienami-indexerがQdrantへ格納するurlと同じ形式・完全一致で判定される）。
+#   3. `docker compose run --rm eval` で実行する。
+#
+# 評価は「LLMの文章の上手さ」ではなく「必要な根拠文書を取得できたか」を測る
+# （Recall@k・MRR）。以下の2件はファイル形式を示すためのダミー例であり、
+# 実データではない。questions.yaml へコピーする際は削除して実際の質問に置き換えること。
+
+cases:
+  - query: "（例）FlashAttentionを使うと学習が落ちる場合の対処法は？"
+    expected_urls:
+      - "https://knowledge.lab.local/doc/flashattention-troubleshooting-xxxxxxxx"
+  - query: "（例）A100でCUDA out of memoryが出たときの対処法は？"
+    expected_urls:
+      - "https://knowledge.lab.local/doc/a100-oom-xxxxxxxx"
