@@ -46,9 +46,11 @@ docker compose run --rm --no-deps --entrypoint sh outline -c \
 
 ## 既知の制約
 
-- Embeddingモデル（Qwen3-Embedding-0.6B）はCPU版イメージで動作する。GPU未搭載サーバでも動作するが、
-  大量文書の一括Embedding時は速度が遅くなる可能性がある（design書9節）。
-- `embedding` サービスの起動オプション（`--max-batch-tokens` / `--tokenization-workers`）は、
-  割当メモリが少ない環境（実機検証: WSL2 + Docker Desktop、7.7GB）でウォームアップ時に
-  クラッシュしないよう既定値より絞ってある（Issue #42）。メモリに余裕のあるサーバではより
-  大きい値に緩めてスループットを上げられる可能性がある。
+- Embeddingサービス（Qwen3-Embedding-0.6B）はNVIDIA GPU（CUDA）版イメージで動作する
+  （開発機・本番サーバともにGPU搭載であることを確認済み、Issue #46）。GPU未搭載環境では
+  `cuda-1.9` の代わりに `cpu-1.9` イメージ・`deploy.resources.reservations` の削除で
+  CPU動作に切り替えられる。CPU動作時はウォームアップ時のメモリ不足に注意
+  （Issue #42、`--max-batch-tokens` を絞る対処が必要だった）。
+- GPU版イメージは初回起動時にCUDAカーネルのコンパイルが走り、`healthy` になるまで数分
+  かかることがある（実機で確認: CPU使用率100%、GPU使用率は低いまま）。ヘルスチェックの
+  `start_period` はこれを考慮した値にしてある。
