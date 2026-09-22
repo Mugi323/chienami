@@ -2,6 +2,9 @@
 #
 # knowledge.lab.local : Outline本体（研究者が直接触るアプリ）
 # auth.lab.local       : Authentik（OIDCログイン画面・招待リンク経由の登録画面）
+# search.lab.local     : Chienami Search（セマンティック検索UI, Issue #36）。
+#                        静的ファイルはCaddyが直接配信し、/api/* のみ chienami-api へ
+#                        プロキシする（同一オリジンのためCORS設定が不要）。
 #
 # OutlineのログインはAuthentikへブラウザリダイレクトするため、Authentik側も
 # LAN内の他端末から到達できるホスト名を割り当てる必要がある（127.0.0.1限定のままでは
@@ -23,4 +26,17 @@ knowledge.lab.local {
 auth.lab.local {
 	tls internal
 	reverse_proxy authentik-server:9000
+}
+
+search.lab.local {
+	tls internal
+
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv/search-ui
+		file_server
+	}
 }

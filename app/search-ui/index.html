@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chienami Search</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="logo">Chienami Search</span>
+    </div>
+  </header>
+
+  <main class="main">
+    <form id="search-form" class="search-form" autocomplete="off">
+      <input
+        id="search-input"
+        class="search-input"
+        type="text"
+        name="q"
+        placeholder="研究室の知識を検索する"
+        autofocus
+      />
+      <button type="submit" class="search-submit" aria-label="検索">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M21.71 20.29l-5.4-5.39A8 8 0 1 0 14.9 16.3l5.39 5.4a1 1 0 0 0 1.42-1.41zM4 10a6 6 0 1 1 6 6 6 6 0 0 1-6-6z"
+          />
+        </svg>
+      </button>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+
+    <ul id="results" class="results"></ul>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
