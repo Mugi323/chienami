@@ -46,6 +46,12 @@ class OutlineClient:
                 "Authorization": f"Bearer {api_token}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                # indexerはReverse Proxy（Caddy）を経由せずDocker内部ネットワークで
+                # 直接Outlineへアクセスする。FORCE_HTTPS=true の場合、Outlineは
+                # X-Forwarded-Proto が無いリクエストを「安全でない」と判定しAPI
+                # ルーターへ到達させない（405 Method Not Allowedになる、Issue #44）。
+                # ブラウザ経由の場合はCaddyがこのヘッダーを自動付与するため発生しない。
+                "X-Forwarded-Proto": "https",
             },
             timeout=timeout,
         )
