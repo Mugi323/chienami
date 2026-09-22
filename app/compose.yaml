@@ -135,6 +135,44 @@ services:
       retries: 10
       start_period: 180s
 
+  # --- LLM（Phase 4, Issue #48） ---
+  # llama.cppでQwen3-8B（GGUF, Q4_K_M量子化）をOpenAI互換APIとして配信する。開発機・本番サーバ
+  # ともにNVIDIA GPUを搭載しているためCUDA版イメージ + フルGPUオフロードを採用する。
+  # 実機検証: RTX 3060 12GB上でEmbeddingサービスと同時稼働してもVRAM使用量は8GB程度（Issue #48）。
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    restart: unless-stopped
+    env_file: ./config/docker.env
+    # APIキー（LLAMA_API_KEY）はenv_file（config/docker.env、setup.shが自動生成）経由で渡す。
+    # compose.yaml自体は ${VAR} 展開をしない設計のため、コマンド引数には書かない
+    # （docs/design/scripts-usage.md参照）。
+    command:
+      [
+        "--hf-repo", "Qwen/Qwen3-8B-GGUF",
+        "--hf-file", "Qwen3-8B-Q4_K_M.gguf",
+        "--host", "0.0.0.0",
+        "--port", "80",
+        "--n-gpu-layers", "99",
+        "--ctx-size", "8192",
+      ]
+    expose:
+      - "80"
+    volumes:
+      - llm-model-cache:/root/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 300s
+
   # --- chienami-indexer（Phase 3, Issue #32） ---
   # Outlineの「全員閲覧可Collection」の公開済み文書を定期的にEmbeddingし、Qdrantへ格納する
   # バックグラウンドプロセス（design書5.1節）。他サービスへ何も公開しないため expose/ports は無し。
@@ -217,3 +255,4 @@ volumes:
   caddy-data:
   qdrant-data:
   embedding-model-cache:
+  llm-model-cache:
