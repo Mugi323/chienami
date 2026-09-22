@@ -89,6 +89,43 @@ services:
       authentik-postgres:
         condition: service_healthy
 
+  # --- Qdrant（Phase 3検索用ベクトルDB, Issue #30） ---
+  # セマンティック検索用のチャンク・Embedding・metadataを保存する。原本ではないため
+  # 索引を全削除してもOutlineから再構築できる（design書4.3節）。既定では認証が無効なため
+  # APIキー必須化し、Docker内部ネットワークに閉じる（ホストへポートpublishしない）。
+  qdrant:
+    image: qdrant/qdrant:v1.19.0
+    restart: unless-stopped
+    env_file: ./config/docker.env
+    expose:
+      - "6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # --- Embedding（Phase 3, Issue #30） ---
+  # text-embeddings-inference（TEI）でQwen3-Embedding-0.6Bを配信する。CPU版イメージを採用し、
+  # GPUを必須要件にしない（design書9節）。モデル重みはnamed volumeへキャッシュし再ダウンロードを避ける。
+  embedding:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.1
+    restart: unless-stopped
+    command: ["--model-id", "Qwen/Qwen3-Embedding-0.6B"]
+    expose:
+      - "80"
+    volumes:
+      - embedding-model-cache:/data
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
   # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik へルーティングする。
   # Caddy内部CAでHTTPS化し、80番はHTTPSへのリダイレクト専用（自動HTTPS機能）として使う。
@@ -113,3 +150,5 @@ volumes:
   authentik-database-data:
   authentik-data:
   caddy-data:
+  qdrant-data:
+  embedding-model-cache:

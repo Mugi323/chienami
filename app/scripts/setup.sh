@@ -49,16 +49,21 @@ bootstrap_docker_env() {
   cp "$example" "$target"
   docker_env_partial="$target"
 
-  local outline_db_pw secret_key utils_secret
+  local outline_db_pw secret_key utils_secret qdrant_api_key
   outline_db_pw="$(openssl rand -hex 32)"
   secret_key="$(openssl rand -hex 32)"
   utils_secret="$(openssl rand -hex 32)"
+  qdrant_api_key="$(openssl rand -hex 32)"
 
   inject_kv "$target" SECRET_KEY "$secret_key"
   inject_kv "$target" UTILS_SECRET "$utils_secret"
   inject_kv "$target" POSTGRES_PASSWORD "$outline_db_pw"
   # DATABASE_URLは同じ$outline_db_pwから再構築するため、POSTGRES_PASSWORDとズレる余地がない。
   inject_kv "$target" DATABASE_URL "postgres://outline:${outline_db_pw}@postgres:5432/outline"
+  # QdrantサーバとクライアントQDRANT__SERVICE__API_KEY / QDRANT_API_KEYを同一値にするため、
+  # ズレないよう1回の生成から両方へ注入する（Issue #30）。
+  inject_kv "$target" QDRANT__SERVICE__API_KEY "$qdrant_api_key"
+  inject_kv "$target" QDRANT_API_KEY "$qdrant_api_key"
 
   docker_env_partial=""
   log_info "作成しました: $target"
