@@ -6,7 +6,8 @@ setlocal
 :: Chienami HTTPS初期設定スクリプト（研究室メンバー向け, Issue #26）
 ::
 :: 以下の2つを1回の実行でまとめて行う。
-::   1. hostsファイルへ knowledge.lab.local / auth.lab.local / search.lab.local を追記（名前解決）
+::   1. hostsファイルへ knowledge.lab.local / auth.lab.local / search.lab.local /
+::      portal.lab.local を追記（名前解決）
 ::   2. Chienamiのルート証明書(chienami-root-ca.crt)をこのPCへ信頼登録
 ::
 :: 実行前の準備:
@@ -36,7 +37,7 @@ if not exist "%CERT_FILE%" (
 
 echo.
 echo === 1/2: hostsファイルへ名前解決を追加します ===
-for %%H in (knowledge.lab.local auth.lab.local search.lab.local) do (
+for %%H in (knowledge.lab.local auth.lab.local search.lab.local portal.lab.local) do (
     findstr /c:"%%H" "%HOSTS_FILE%" >nul 2>&1
     if errorlevel 1 (
         echo %HOST_IP%  %%H>> "%HOSTS_FILE%"
@@ -57,5 +58,5 @@ if %errorlevel% neq 0 (
 
 echo.
 echo === 完了しました ===
-echo ブラウザで https://knowledge.lab.local を開いて動作確認してください。
+echo ブラウザで https://portal.lab.local を開いて動作確認してください。
 pause

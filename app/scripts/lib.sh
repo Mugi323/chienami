@@ -41,7 +41,7 @@ inject_kv() {
 
 check_hosts_entries() {
   local host missing=()
-  for host in knowledge.lab.local auth.lab.local search.lab.local; do
+  for host in knowledge.lab.local auth.lab.local search.lab.local portal.lab.local; do
     grep -qE "^[^#]*[[:space:]]${host}([[:space:]]|\$)" /etc/hosts 2>/dev/null || missing+=("$host")
   done
   if ((${#missing[@]} > 0)); then

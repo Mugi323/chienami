@@ -5,6 +5,8 @@
 # search.lab.local     : Chienami Search（セマンティック検索UI, Issue #36）。
 #                        静的ファイルはCaddyが直接配信し、/api/* のみ chienami-api へ
 #                        プロキシする（同一オリジンのためCORS設定が不要）。
+# portal.lab.local      : Chienami ポータル（Outline/Search選択画面, Issue #40）。
+#                        静的ファイルのみをCaddyが直接配信する。
 #
 # OutlineのログインはAuthentikへブラウザリダイレクトするため、Authentik側も
 # LAN内の他端末から到達できるホスト名を割り当てる必要がある（127.0.0.1限定のままでは
@@ -39,4 +41,10 @@ search.lab.local {
 		root * /srv/search-ui
 		file_server
 	}
+}
+
+portal.lab.local {
+	tls internal
+	root * /srv/portal
+	file_server
 }

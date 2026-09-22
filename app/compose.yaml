@@ -179,7 +179,8 @@ services:
 
   # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik、
-  # search.lab.local -> Chienami Search（静的UI + /api/* を chienami-api へ, Issue #36）
+  # search.lab.local -> Chienami Search（静的UI + /api/* を chienami-api へ, Issue #36）、
+  # portal.lab.local -> Chienami ポータル（Outline/Search選択画面, Issue #40）
   # へルーティングする。Caddy内部CAでHTTPS化し、80番はHTTPSへのリダイレクト専用
   # （自動HTTPS機能）として使う。ホストのファイアウォールでLAN外からの80/443番アクセスを
   # 遮断すること（研究室LANからのみ許可、docs/design/reverse-proxy-setup.md参照）。
@@ -192,6 +193,7 @@ services:
     volumes:
       - ./reverse-proxy/Caddyfile:/etc/caddy/Caddyfile:ro
       - ./search-ui:/srv/search-ui:ro
+      - ./portal:/srv/portal:ro
       - caddy-data:/data
     depends_on:
       - outline

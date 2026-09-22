@@ -1,8 +1,9 @@
 # Reverse Proxyセットアップ手順（研究室LAN内アクセス）
 
 Issue #14で追加したCaddyコンテナは、`knowledge.lab.local`（Outline）・`auth.lab.local`
-（Authentik）・`search.lab.local`（Chienami Search UI, Issue #36）宛のリクエストを
-それぞれ内部のコンテナへ転送する。ただし、これらのホスト名は実在するドメインではないため、
+（Authentik）・`search.lab.local`（Chienami Search UI, Issue #36）・`portal.lab.local`
+（Outline/Search選択画面, Issue #40）宛のリクエストをそれぞれ内部のコンテナ・静的ファイルへ
+転送する。ただし、これらのホスト名は実在するドメインではないため、
 **名前解決の設定を別途行わないとどの端末からも `knowledge.lab.local` へアクセスできない**。
 
 前提: `app/compose.yaml` の `caddy` サービスが起動していること（`docker compose up -d`）。
@@ -16,6 +17,7 @@ Reverse Proxyを動かしているホストPCのIPアドレスを追記する。
 <ホストPCのLAN内IPアドレス>  knowledge.lab.local
 <ホストPCのLAN内IPアドレス>  auth.lab.local
 <ホストPCのLAN内IPアドレス>  search.lab.local
+<ホストPCのLAN内IPアドレス>  portal.lab.local
 ```
 
 - Windows: `C:\Windows\System32\drivers\etc\hosts`
@@ -67,7 +69,8 @@ Windows端末の利用者は、配布された2ファイルを同じフォルダ
 **管理者として実行**する（UACプロンプトが表示される）。これにより以下が1回の実行で
 完了する。
 
-- hostsファイルへの `knowledge.lab.local` / `auth.lab.local` / `search.lab.local` 追記（名前解決）
+- hostsファイルへの `knowledge.lab.local` / `auth.lab.local` / `search.lab.local` /
+  `portal.lab.local` 追記（名前解決）
 - ルートCA証明書の信頼登録（証明書エラーの解消）
 
 macOS/Linuxを使う場合は、現時点では対応スクリプトを用意していないため、
@@ -92,7 +95,7 @@ macOS/Linuxを使う場合は、現時点では対応スクリプトを用意し
 
 ## 5. 既知の制約
 
-- `knowledge.lab.local` / `auth.lab.local` / `search.lab.local` の名前解決を手動（hosts）に依存しているため、
+- `knowledge.lab.local` / `auth.lab.local` / `search.lab.local` / `portal.lab.local` の名前解決を手動（hosts）に依存しているため、
   IPアドレスが変わった場合は各端末のhostsファイルを再度更新する必要がある。
 - `docker compose down -v` 等で `caddy-data` named volumeを削除すると、Caddyの
   ルートCA自体が再生成される。この場合は3節の手順で証明書を配り直し、全端末で
