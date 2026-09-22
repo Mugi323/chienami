@@ -126,6 +126,22 @@ services:
       retries: 10
       start_period: 180s
 
+  # --- chienami-indexer（Phase 3, Issue #32） ---
+  # Outlineの「全員閲覧可Collection」の公開済み文書を定期的にEmbeddingし、Qdrantへ格納する
+  # バックグラウンドプロセス（design書5.1節）。他サービスへ何も公開しないため expose/ports は無し。
+  indexer:
+    build:
+      context: ./indexer
+    restart: unless-stopped
+    env_file: ./config/docker.env
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      embedding:
+        condition: service_healthy
+      outline:
+        condition: service_started
+
   # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik へルーティングする。
   # Caddy内部CAでHTTPS化し、80番はHTTPSへのリダイレクト専用（自動HTTPS機能）として使う。
