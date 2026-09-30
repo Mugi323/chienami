@@ -131,6 +131,16 @@ macOS/Linuxなら `/etc/hosts`）に一時的に以下を追記する。
 操作なので警告を許可して進めてよい。設定完了後、hosts追記は元に戻し、SSHトンネルも
 切断してよい（8・9節でのクライアントへの正式なルートCA配布・hosts設定とは無関係）。
 
+> **注意: OutlineはこのSSHトンネル経由では利用できない。**
+> Outlineはログイン時のリダイレクト先を `URL=https://knowledge.lab.local`（ポート番号なし）
+> から組み立てるため、`https://knowledge.lab.local:8443/` でトップページは表示できても、
+> ログインで `https://knowledge.lab.local/auth/oidc`（手元PCの443番）へ飛ばされ
+> `ERR_CONNECTION_REFUSED` になる。共同編集のWebSocket（`wss://knowledge.lab.local`）も同様。
+> トンネルはAuthentik管理画面の初期設定専用とし、Outlineの動作確認はLAN内のPCから
+> 8・9節の手順（hostsにサーバのLAN内IPを設定）で `https://knowledge.lab.local/` に直接
+> アクセスして行う。トンネル用に手元PCのhostsへ書いた `127.0.0.1` の行は必ず元に戻すこと
+> （`setup-client.bat` は同名エントリを置き換えるので、実行すれば上書きされる）。
+
 ## 6. ホストファイアウォール設定
 
 LAN外からのアクセスを遮断する（詳細: [reverse-proxy-setup.md](reverse-proxy-setup.md) 2節）。
@@ -192,6 +202,14 @@ set HOST_IP=<サーバのLAN内IP>
 各Windows PCで、配布された2ファイルを同じフォルダに置き、`setup-client.bat` を
 **管理者として実行**する。完了後、ブラウザを再起動して `https://knowledge.lab.local` に
 アクセスし、証明書エラーなくOutlineのログイン画面が表示されることを確認する。
+
+`setup-client.bat` はhostsに既にある同名エントリ（`127.0.0.1` 向けや旧IP向け）を削除してから
+`HOST_IP` の行を追記し直す（元のhostsは `hosts.chienami.bak` としてhostsと同じフォルダに退避される）。
+そのためサーバのIPが変わった場合も、`HOST_IP` を書き換えたバッチを再実行すればよい。
+`HOST_IP` が初期値 `192.0.2.1` のままだとエラーで停止する。
+
+接続対象はLAN内（研究室ネットワーク）のPCのみ。ログインには各メンバーのAuthentikユーザーが
+必要なので、配布前にAuthentik管理画面で作成しておく。
 
 macOS/Linuxクライアントの場合は、[reverse-proxy-setup.md](reverse-proxy-setup.md) 3.3節の
 手動手順に従う。
