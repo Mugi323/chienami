@@ -47,6 +47,35 @@ docker compose version
 
 両方ともバージョンが表示されることを確認する。
 
+## 2.5 NVIDIAドライバのセットアップ
+
+embeddingサービス（`text-embeddings-inference:cuda-1.9`）はCUDA 12.9以上を要求するため、
+ドライババージョン **570以上** が必要である。
+
+```bash
+nvidia-smi  # CUDA Version が 12.9 以上であればスキップ可
+```
+
+古いドライバが入っている場合は以下の手順で更新する。
+
+```bash
+# 既存ドライバの削除（535系など旧バージョンと競合するため先に削除が必要）
+sudo apt remove --purge 'nvidia-*' 'libnvidia-*'
+sudo apt autoremove
+
+# 570のインストール
+sudo apt update
+sudo apt install nvidia-driver-570
+
+sudo reboot
+```
+
+再起動後、`nvidia-smi` で `CUDA Version: 12.9` 以上になっていることを確認する。
+
+**補足**: ドライバは後方互換性があるため、既存のCUDA 11.x系コンテナ（研究員の開発環境等）は
+ドライバ更新後もそのまま動作する。ただし更新作業中はサーバを再起動するため、
+**他のユーザーへ事前に告知**してから実施すること。
+
 ## 3. リポジトリの取得
 
 ```bash
