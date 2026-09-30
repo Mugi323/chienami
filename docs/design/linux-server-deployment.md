@@ -80,6 +80,28 @@ cd chienami/app
 一時的に `127.0.0.1 knowledge.lab.local` `127.0.0.1 auth.lab.local` を追記し、サーバ上の
 ブラウザ（またはSSHポートフォワード経由）で確認するか、7節以降を先に行ってから戻ってくる。
 
+### サーバにGUI/画面が無くSSHアクセスのみの場合
+
+サーバ自身にブラウザが無い場合は、SSHのローカルポートフォワードで手元PCのブラウザから
+Authentikの管理画面へアクセスする。
+
+```bash
+# 手元PCから（<ユーザー>・<サーバIP>は実際の値に置き換える）
+ssh -L 8443:localhost:443 <ユーザー>@<サーバIP>
+```
+
+手元PCの hosts ファイル（Windowsなら `C:\Windows\System32\drivers\etc\hosts`、
+macOS/Linuxなら `/etc/hosts`）に一時的に以下を追記する。
+
+```
+127.0.0.1 auth.lab.local
+```
+
+ブラウザで `https://auth.lab.local:8443/` を開くとAuthentikの管理画面に到達できる。
+ルートCA未配布の段階のため証明書エラーが出るが、この初期セットアップ限定の一時的な
+操作なので警告を許可して進めてよい。設定完了後、hosts追記は元に戻し、SSHトンネルも
+切断してよい（8・9節でのクライアントへの正式なルートCA配布・hosts設定とは無関係）。
+
 ## 6. ホストファイアウォール設定
 
 LAN外からのアクセスを遮断する（詳細: [reverse-proxy-setup.md](reverse-proxy-setup.md) 2節）。
