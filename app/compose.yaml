@@ -114,9 +114,9 @@ services:
   # GPUのcompute capabilityを自動検出する）。モデル重みはnamed volumeへキャッシュし
   # 再ダウンロードを避ける。
   embedding:
-    image: ghcr.io/huggingface/text-embeddings-inference:cuda-1.9
+    image: ghcr.io/huggingface/text-embeddings-inference:cuda-1.8
     restart: unless-stopped
-    command: ["--model-id", "Qwen/Qwen3-Embedding-0.6B"]
+    command: ["--model-id", "Qwen/Qwen3-Embedding-0.6B", "--auto-truncate"]
     expose:
       - "80"
     volumes:

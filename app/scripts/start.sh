@@ -26,4 +26,4 @@ log_info "起動しています: outline / postgres / redis / authentik-postgres
 compose up -d
 compose ps
 check_hosts_entries
-log_info "起動完了: http://knowledge.lab.local/ （認証: http://auth.lab.local/）"
+log_info "起動完了: https://knowledge.lab.local/ （認証: https://auth.lab.local/）"
