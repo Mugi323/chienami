@@ -62,6 +62,19 @@ chienami/
 └─ .github/              # Issue/PRテンプレート
 ```
 
+## リリースブランチ
+
+研究室サーバへの導入は、Phase 4（RAG/ローカルLLM）を含まない安定版ブランチ
+`release/v1-no-rag`（Phase 1〜3: Outline知識蓄積 + Semantic Search）から行います。
+`main`は開発の最新状態（Phase 4以降を含む）を追跡するため、サーバ導入時は必ず
+リリースブランチを指定してください。
+
+```bash
+git clone -b release/v1-no-rag https://github.com/Mugi323/chienami.git
+```
+
+導入手順は [docs/design/linux-server-deployment.md](docs/design/linux-server-deployment.md) を参照してください。
+
 ## 開発フロー
 
 GitHub Flowを採用し、「1 Issue = 1変更目的 = 1 Pull Request」を原則とします。
