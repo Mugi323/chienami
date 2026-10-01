@@ -109,10 +109,10 @@ services:
       start_period: 20s
 
   # --- Embedding（Phase 3, Issue #30 / GPU対応, Issue #46） ---
-  # text-embeddings-inference（TEI）でQwen3-Embedding-0.6Bを配信する。開発機・本番サーバとも
+  # text-embeddings-inference（TEI）でQwen3-Embedding-0.6Bを配信する。本番サーバは
   # NVIDIA GPUを搭載しているためCUDA版イメージを採用する（マルチアーキビルドで、起動時に
   # GPUのcompute capabilityを自動検出する）。モデル重みはnamed volumeへキャッシュし
-  # 再ダウンロードを避ける。
+  # 再ダウンロードを避ける。GPU非搭載の開発機では compose.cpu.yaml を重ねる（Issue #55）。
   embedding:
     image: ghcr.io/huggingface/text-embeddings-inference:cuda-1.8
     restart: unless-stopped
@@ -136,8 +136,9 @@ services:
       start_period: 180s
 
   # --- LLM（Phase 4, Issue #48） ---
-  # llama.cppでQwen3-8B（GGUF, Q4_K_M量子化）をOpenAI互換APIとして配信する。開発機・本番サーバ
-  # ともにNVIDIA GPUを搭載しているためCUDA版イメージ + フルGPUオフロードを採用する。
+  # llama.cppでQwen3-8B（GGUF, Q4_K_M量子化）をOpenAI互換APIとして配信する。本番サーバは
+  # NVIDIA GPUを搭載しているためCUDA版イメージ + フルGPUオフロードを採用する。
+  # GPU非搭載の開発機では compose.cpu.yaml を重ねる（Issue #55）。
   # 実機検証: RTX 3060 12GB上でEmbeddingサービスと同時稼働してもVRAM使用量は8GB程度（Issue #48）。
   llm:
     image: ghcr.io/ggml-org/llama.cpp:server-cuda

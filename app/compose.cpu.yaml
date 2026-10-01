@@ -1,0 +1,39 @@
+# GPU非搭載の開発機向けoverride（Issue #55）。
+#
+# compose.yaml（本番・GPU構成）に重ねて使う:
+#   docker compose -f compose.yaml -f compose.cpu.yaml up -d
+# app/scripts/ のスクリプトは環境変数 CHIENAMI_CPU=1 でこのファイルを自動的に重ねる
+# （docs/design/cpu-dev-setup.md参照）。
+#
+# 目的はPhase 4（RAG）の結合動作確認であり、回答品質・速度の評価はGPU機で行う。
+# そのためLLMは本番（Qwen3-8B）より小さいモデルに差し替える。
+services:
+  # --max-batch-tokens / --tokenization-workers: 既定値（16384トークン）のままだと、
+  # ウォームアップ時に確保するバッチが大きすぎてメモリ不足でクラッシュする
+  # （実機検証: WSL2 + Docker Desktop、割当メモリ7.7GB。Issue #42で確認した対策をCPU構成に引き継ぐ）。
+  # --auto-truncate により、入力は --max-batch-tokens（2048トークン）で切り詰められる。
+  embedding:
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9
+    command:
+      [
+        "--model-id", "Qwen/Qwen3-Embedding-0.6B",
+        "--auto-truncate",
+        "--max-batch-tokens", "2048",
+        "--tokenization-workers", "2",
+      ]
+    deploy: !reset {}
+
+  llm:
+    image: ghcr.io/ggml-org/llama.cpp:server
+    # RAM 7GB程度の開発機でも他サービスと同時稼働できるよう、Qwen3-1.7B（公式GGUFは
+    # Q8_0のみ提供、約1.8GB）を使い、コンテキスト長も本番より短くする。
+    command:
+      [
+        "--hf-repo", "Qwen/Qwen3-1.7B-GGUF",
+        "--hf-file", "Qwen3-1.7B-Q8_0.gguf",
+        "--host", "0.0.0.0",
+        "--port", "80",
+        "--n-gpu-layers", "0",
+        "--ctx-size", "4096",
+      ]
+    deploy: !reset {}

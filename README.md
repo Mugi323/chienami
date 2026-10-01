@@ -118,3 +118,4 @@ Issue作成 → ブランチ作成 → 実装 → Push → Pull Request → CI �
 
 - [システム設計書 v1.4](docs/system_design_v1.4.md) — アーキテクチャ、コンポーネント設計、セキュリティ、バックアップ・復旧、導入ロードマップなどの詳細
 - [起動・停止スクリプトの使い方](docs/design/scripts-usage.md) — `app/scripts/` の `setup.sh` / `start.sh` / `stop.sh` の使い方
+- [GPU非搭載の開発機での起動](docs/design/cpu-dev-setup.md) — `CHIENAMI_CPU=1` でCPU用overrideを重ねて起動する方法

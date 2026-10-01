@@ -64,6 +64,12 @@ Issue #24で追加した `app/scripts/` 配下のスクリプトにより、`app
 CI等の非対話環境から実行する場合は `--yes` を明示的に付けない限り拒否される
 (`./app/scripts/stop.sh --reset-data --yes`)。
 
+## 4. GPU非搭載の開発機: `CHIENAMI_CPU=1`
+
+どのスクリプトも、環境変数 `CHIENAMI_CPU=1` を付けるとCPU用のoverride `app/compose.cpu.yaml` を重ねて
+`docker compose` を実行する（例: `CHIENAMI_CPU=1 ./app/scripts/start.sh`）。詳細は
+[cpu-dev-setup.md](cpu-dev-setup.md) を参照。
+
 ## 既知の制約
 
 - OIDC値の設定と `/etc/hosts` の編集は引き続き手動（前者はAuthentik管理UI操作、後者はsudo権限が
