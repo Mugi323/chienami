@@ -8,9 +8,14 @@
 #      差し替える。expected_urls には、その質問に対する正しい根拠文書のURLを1つ以上
 #      指定する（chienami-indexerがQdrantへ格納するurlと同じ形式・完全一致で判定される）。
 #   3. `docker compose run --rm eval` で実行する。
+#      ハイブリッド検索との比較・RAG回答の評価は
+#      `docker compose run --rm eval /app/questions.yaml --mode semantic,hybrid --rag`。
+#
+# expected_urls を空（[]）にした質問は「知識ベースに答えがない質問」として扱う。
+# 検索のRecall/MRRには含めず、--rag では「回答を控えたか」を評価する（Phase 4）。
 #
 # 評価は「LLMの文章の上手さ」ではなく「必要な根拠文書を取得できたか」を測る
-# （Recall@k・MRR）。以下の2件はファイル形式を示すためのダミー例であり、
+# （Recall@k・MRR）。以下の3件はファイル形式を示すためのダミー例であり、
 # 実データではない。questions.yaml へコピーする際は削除して実際の質問に置き換えること。
 
 cases:
@@ -20,3 +25,5 @@ cases:
   - query: "（例）A100でCUDA out of memoryが出たときの対処法は？"
     expected_urls:
       - "https://knowledge.lab.local/doc/a100-oom-xxxxxxxx"
+  - query: "（例）明日の研究室の天気は？"
+    expected_urls: []
