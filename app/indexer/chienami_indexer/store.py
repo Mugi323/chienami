@@ -15,6 +15,9 @@ from qdrant_client.http import models as qmodels
 # 再索引時に同じ文書・同じchunk_indexなら同じpoint IDになり、upsertで上書きされる。
 _POINT_NAMESPACE = uuid.UUID("d9b1c8b2-6e2b-4f2a-9a9d-2a6a6f3b7a10")
 
+# chienami-apiのKeyword検索が全文マッチに使うpayloadフィールド。
+TEXT_INDEX_FIELD = "text"
+
 
 def point_id(document_id: str, chunk_index: int) -> str:
     return str(uuid.uuid5(_POINT_NAMESPACE, f"{document_id}:{chunk_index}"))
@@ -28,12 +31,31 @@ class QdrantStore:
 
     def ensure_collection(self) -> None:
         existing = {c.name for c in self._client.get_collections().collections}
-        if self._collection in existing:
+        if self._collection not in existing:
+            self._client.create_collection(
+                collection_name=self._collection,
+                vectors_config=qmodels.VectorParams(
+                    size=self._vector_size, distance=qmodels.Distance.COSINE
+                ),
+            )
+        self.ensure_text_index()
+
+    def ensure_text_index(self) -> None:
+        """Keyword検索（Phase 4 Hybrid検索）用に、本文(text)の全文インデックスを作る。
+
+        multilingual tokenizerは日本語の単語分割に対応する。Phase 3で作成済みの
+        collectionにも後から追加できるよう、インデックスが無い場合だけ作成する。
+        """
+        info = self._client.get_collection(self._collection)
+        if TEXT_INDEX_FIELD in (info.payload_schema or {}):
             return
-        self._client.create_collection(
+        self._client.create_payload_index(
             collection_name=self._collection,
-            vectors_config=qmodels.VectorParams(
-                size=self._vector_size, distance=qmodels.Distance.COSINE
+            field_name=TEXT_INDEX_FIELD,
+            field_schema=qmodels.TextIndexParams(
+                type=qmodels.TextIndexType.TEXT,
+                tokenizer=qmodels.TokenizerType.MULTILINGUAL,
+                lowercase=True,
             ),
         )
 
