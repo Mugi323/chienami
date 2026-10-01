@@ -8,6 +8,8 @@ APP_DIR="$(dirname "$SCRIPT_DIR")"
 # shellcheck disable=SC2034  # setup.sh/start.sh/stop.sh から参照される
 CONFIG_DIR="${CHIENAMI_CONFIG_DIR:-$APP_DIR/config}"
 COMPOSE_FILE="$APP_DIR/compose.yaml"
+# GPU非搭載の開発機では CHIENAMI_CPU=1 でCPU用overrideを重ねる（Issue #55, docs/design/cpu-dev-setup.md）。
+COMPOSE_CPU_FILE="$APP_DIR/compose.cpu.yaml"
 
 log()       { printf '[%s] [%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1" "$2"; }
 log_info()  { log "INFO"  "$1"; }
@@ -24,7 +26,11 @@ require_compose() {
 }
 
 compose() {
-  docker compose -f "$COMPOSE_FILE" --project-directory "$APP_DIR" "$@"
+  local files=(-f "$COMPOSE_FILE")
+  if [[ "${CHIENAMI_CPU:-}" == "1" ]]; then
+    files+=(-f "$COMPOSE_CPU_FILE")
+  fi
+  docker compose "${files[@]}" --project-directory "$APP_DIR" "$@"
 }
 
 # sedの置換文字列に含まれる \ & | を無害化する（区切り文字|との衝突・&の特殊展開を防ぐ）。
