@@ -75,6 +75,21 @@ git clone -b release/v1-no-rag https://github.com/Mugi323/chienami.git
 
 導入手順は [docs/design/linux-server-deployment.md](docs/design/linux-server-deployment.md) を参照してください。
 
+### リリースブランチの運用ルール
+
+リリースブランチは「導入済みの安定版」を固定するためのブランチであり、新機能は入れません。
+
+| 変更の種類 | 流れ |
+|---|---|
+| 新機能 | `feat/*` → PR → `main`（リリースブランチには入れない） |
+| サーバ運用中のバグ修正 | `fix/*` → PR → `release/*` → リリースブランチを `main` にマージして戻す |
+| 次の安定版 | `main` から `release/v2-<概要>` を新規作成し、本節の案内とサーバのcheckout先を切り替える |
+
+- リリースブランチ向けの修正ブランチは、リリースブランチから作成し、PRのbaseもリリースブランチにする。
+- リリースブランチで行った修正は、次のリリースで再発しないよう必ず `main` へ戻す。
+- 新機能を現行の安定版へ個別に取り込む（`git cherry-pick`）のは例外扱いとし、PRで理由を明記する。
+- リリース時点および修正の反映時に `v<メジャー>.<マイナー>.<パッチ>` 形式のタグを打つ（例: `v1.0.0`, `v1.0.1`）。
+
 ## 開発フロー
 
 GitHub Flowを採用し、「1 Issue = 1変更目的 = 1 Pull Request」を原則とします。
