@@ -231,8 +231,38 @@ Phase 1では独自Chienami APIは必須ではなく、Outlineだけで運用し
 
 ## Phase 4 chatリクエスト例
 
+```http
+POST /api/chat
+Content-Type: application/json
+
+{"question": "PCRのアニーリング温度は何度にしていますか？", "top_k": 5}
+```
+
+`top_k`（根拠の最大件数, 1〜10）は省略可能。省略時は `RAG_TOP_K`（既定5）。
 
 ## Phase 4 chatレスポンス例
+
+```json
+{
+  "question": "PCRのアニーリング温度は何度にしていますか？",
+  "answer": "標準プロトコルでは58度に設定しています[S1]。増幅しない場合は2度ずつ下げて再試行します[S2]。",
+  "abstained": false,
+  "sources": [
+    {"id": "S1", "document_id": "…", "title": "PCR標準プロトコル",
+     "url": "https://knowledge.lab.local/doc/…", "snippet": "…", "score": 0.97,
+     "chunk_index": 0, "cited": true},
+    {"id": "S2", "document_id": "…", "title": "PCRトラブル事例",
+     "url": "https://knowledge.lab.local/doc/…", "snippet": "…", "score": 0.91,
+     "chunk_index": 2, "cited": true}
+  ],
+  "timings": {"search_ms": 45, "rerank_ms": 120, "llm_ms": 2300}
+}
+```
+
+- `sources` はLLMに渡した根拠（Rerank関連度の降順）。`cited` は回答中で `[Sn]` として引用されたかどうか。
+- `abstained: true` は回答を控えたことを表す。関連度が `RAG_MIN_RERANK_SCORE` 以上の根拠が1件もない
+  場合（LLMは呼ばない、`sources` は空）と、LLMが「資料からは分かりません。」と答えた場合の2通り。
+- Reranker・LLMが利用できない場合は503を返す。`/search` はこれらに依存せず動作し続ける。
 
 
 # 11. ログ・監視・品質評価

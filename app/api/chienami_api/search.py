@@ -214,6 +214,14 @@ class SearchService:
         scored.sort(key=lambda c: c.score, reverse=True)
         return scored[:limit]
 
+    def candidate_chunks(
+        self, query: str, query_vector: list[float], candidates: int
+    ) -> list[Chunk]:
+        """Dense + KeywordをRRFで統合し、上位candidates件を返す（Rerank前の候補）。"""
+        dense = self.dense_chunks(query_vector, candidates)
+        keyword = self.keyword_chunks(extract_keywords(query), candidates)
+        return rrf_fuse([dense, keyword])[:candidates]
+
     def hybrid_chunks(
         self,
         query: str,
@@ -225,9 +233,7 @@ class SearchService:
 
         Rerankerがない・失敗した場合はRRF順のまま返す（検索自体は止めない）。
         """
-        dense = self.dense_chunks(query_vector, candidates)
-        keyword = self.keyword_chunks(extract_keywords(query), candidates)
-        fused = rrf_fuse([dense, keyword])[:candidates]
+        fused = self.candidate_chunks(query, query_vector, candidates)
         if reranker is None:
             return fused
         try:

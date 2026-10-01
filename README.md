@@ -120,3 +120,4 @@ Issue作成 → ブランチ作成 → 実装 → Push → Pull Request → CI �
 - [起動・停止スクリプトの使い方](docs/design/scripts-usage.md) — `app/scripts/` の `setup.sh` / `start.sh` / `stop.sh` の使い方
 - [GPU非搭載の開発機での起動](docs/design/cpu-dev-setup.md) — `CHIENAMI_CPU=1` でCPU用overrideを重ねて起動する方法
 - [Reranker基盤の動作確認](docs/design/reranker-setup.md) — llama.cpp + Qwen3-Reranker-0.6B（Phase 4）
+- [RAG（/chat）の動作確認](docs/design/rag-setup.md) — 出典付き回答の仕組み・設定・GPU機での確認項目（Phase 4）
