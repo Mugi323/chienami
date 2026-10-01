@@ -5,12 +5,18 @@ GPUのない開発機では、CPU用のoverride `app/compose.cpu.yaml` を重ね
 
 目的は**Phase 3/4の結合動作確認**。回答品質・速度・VRAM使用量の評価はGPU機で行う。
 
+> **RAM 16GB以上の機械向け。** RAM 8GB程度の機械（実機: WSL2 + Docker Desktop、7.7GB）では、
+> Outline・Authentikと一緒にAI系（embedding / reranker / llm）を動かすと、スワップを使い切って
+> Docker Desktopごと応答しなくなった。そうした機械では、モデルのコンテナは起動しない。
+> 開発は各サービスの単体テスト（pytest。外部サービスはモック）で行い、実際のモデルでの確認はGPU機でまとめて行う。
+
 ## 差し替える内容
 
 | サービス | 本番（compose.yaml） | CPU開発（compose.cpu.yaml） |
 | --- | --- | --- |
 | `embedding` | TEI `cuda-1.8` | TEI `cpu-1.9`。`--max-batch-tokens 2048` / `--tokenization-workers 2` を付ける |
 | `llm` | llama.cpp `server-cuda` + Qwen3-8B Q4_K_M | llama.cpp `server` + Qwen3-1.7B Q8_0（`--ctx-size 4096`） |
+| `reranker` | llama.cpp `server-cuda` + Qwen3-Reranker-0.6B Q8_0 | llama.cpp `server`（`--n-gpu-layers 0`） |
 
 どちらもGPUの予約（`deploy.resources`）を外している。
 
@@ -42,7 +48,7 @@ RAM 8GB程度の機械では、Outline・Authentik・AI系をすべて同時に�
 
 ```bash
 cd app
-docker compose -f compose.yaml -f compose.cpu.yaml up -d qdrant embedding llm api
+docker compose -f compose.yaml -f compose.cpu.yaml up -d qdrant embedding reranker llm api
 ```
 
 索引化（indexer）にはOutlineが必要なので、索引を作るときだけ `outline` / `postgres` / `redis` も起動する。
@@ -60,7 +66,10 @@ docker run --rm --network app_default curlimages/curl -s -X POST http://llm:80/v
        "chat_template_kwargs":{"enable_thinking":false}}'
 ```
 
-実機の結果（WSL2、RAM 7.7GB、GPUなし）: どちらも応答した。`llm` の応答時間は短い質問で約5秒。
+実機の結果（WSL2、RAM 7.7GB、GPUなし）:
+- `embedding` / `llm`: どちらも応答した。`llm` の応答時間は短い質問で約5秒
+- `reranker`: 候補4件の短い文では正しく並べ替えられた。ただし候補20件（各約550字）では約177秒かかった。
+  さらに他のAI系と同時に動かすとメモリが枯渇したため、この機械でrerankを動かすのは現実的ではない
 
 ## 注意
 

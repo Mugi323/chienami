@@ -59,7 +59,7 @@ Issue #24で追加した `app/scripts/` 配下のスクリプトにより、`app
 ```
 
 `storage-data` / `database-data` / `authentik-database-data` / `authentik-data` / `caddy-data` /
-`qdrant-data` / `embedding-model-cache` の全named volumeを削除して停止する。対話端末では
+`qdrant-data` / `embedding-model-cache` / `llm-model-cache` / `reranker-model-cache` の全named volumeを削除して停止する。対話端末では
 `delete` という文字列の入力一致を要求する。
 CI等の非対話環境から実行する場合は `--yes` を明示的に付けない限り拒否される
 (`./app/scripts/stop.sh --reset-data --yes`)。

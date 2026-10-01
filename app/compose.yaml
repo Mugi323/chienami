@@ -174,6 +174,44 @@ services:
       retries: 10
       start_period: 300s
 
+  # --- Reranker（Phase 4, Issue #50） ---
+  # 検索候補をクエリとの関連度で並べ替えるcross-encoder。Qwen3-Reranker-0.6Bを
+  # llama.cppの --reranking モード（/v1/rerank）で配信する。
+  # TEI（1.9時点）はQwen3のclassifier型モデルに未対応で起動できないため、Embeddingと違い
+  # llama.cpp + GGUF（ggml-org公式変換版, Q8_0）を採用した（Issue #50で実機確認）。
+  # Embeddingと同様にDocker内部ネットワークに閉じ、APIキーは設定しない。
+  reranker:
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda
+    restart: unless-stopped
+    command:
+      [
+        "--hf-repo", "ggml-org/Qwen3-Reranker-0.6B-Q8_0-GGUF",
+        "--reranking",
+        "--host", "0.0.0.0",
+        "--port", "80",
+        "--n-gpu-layers", "99",
+        "--ctx-size", "8192",
+        "--batch-size", "2048",
+        "--ubatch-size", "2048",
+      ]
+    expose:
+      - "80"
+    volumes:
+      - reranker-model-cache:/root/.cache
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: ["gpu"]
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/80' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+
   # --- chienami-indexer（Phase 3, Issue #32） ---
   # Outlineの「全員閲覧可Collection」の公開済み文書を定期的にEmbeddingし、Qdrantへ格納する
   # バックグラウンドプロセス（design書5.1節）。他サービスへ何も公開しないため expose/ports は無し。
@@ -257,3 +295,4 @@ volumes:
   qdrant-data:
   embedding-model-cache:
   llm-model-cache:
+  reranker-model-cache:
