@@ -178,3 +178,140 @@ body {
 .result-link:hover {
   text-decoration: underline;
 }
+
+/* --- モード切り替え（検索 / AI回答） --- */
+
+.mode-switch {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 12px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+.mode-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.mode-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-option span {
+  display: block;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+.mode-option input:checked + span {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.mode-option input:focus-visible + span {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mode-note {
+  margin: 10px 4px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.search-form.busy .search-submit {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+/* --- AI回答 --- */
+
+.answer-card {
+  margin-top: 16px;
+  padding: 18px 20px;
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  background: var(--bg-elevated);
+}
+
+.answer-card.abstained {
+  border-color: var(--border);
+}
+
+.answer-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.8;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.cite {
+  display: inline-block;
+  margin: 0 2px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.6;
+  vertical-align: 1px;
+  background: var(--accent);
+  color: var(--accent-text);
+  text-decoration: none;
+}
+
+.cite:hover {
+  opacity: 0.85;
+}
+
+.answer-fallback {
+  margin-top: 12px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.answer-fallback:hover {
+  text-decoration: underline;
+}
+
+.sources-heading {
+  margin: 24px 4px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.source-badge {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: 1px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+
+.result-card.uncited {
+  opacity: 0.7;
+}
+
+.result-card:target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+.result-header {
+  flex-wrap: wrap;
+}
