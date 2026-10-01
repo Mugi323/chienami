@@ -14,6 +14,17 @@
   </header>
 
   <main class="main">
+    <div class="mode-switch" role="radiogroup" aria-label="モード">
+      <label class="mode-option">
+        <input type="radio" name="mode" value="search" checked />
+        <span>検索</span>
+      </label>
+      <label class="mode-option">
+        <input type="radio" name="mode" value="ai" />
+        <span>AI回答</span>
+      </label>
+    </div>
+
     <form id="search-form" class="search-form" autocomplete="off">
       <input
         id="search-input"
@@ -23,7 +34,7 @@
         placeholder="研究室の知識を検索する"
         autofocus
       />
-      <button type="submit" class="search-submit" aria-label="検索">
+      <button type="submit" class="search-submit" aria-label="送信">
         <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
           <path
             fill="currentColor"
@@ -33,8 +44,20 @@
       </button>
     </form>
 
+    <p id="mode-note" class="mode-note" hidden>
+      研究室の知識ベースだけを根拠に回答します。回答には必ず出典を確認してください。
+    </p>
+
     <div id="status" class="status" role="status" aria-live="polite"></div>
 
+    <section id="answer" class="answer-card" hidden aria-live="polite">
+      <p id="answer-text" class="answer-text"></p>
+      <button id="answer-fallback" type="button" class="answer-fallback" hidden>
+        通常の検索で探す →
+      </button>
+    </section>
+
+    <h2 id="sources-heading" class="sources-heading" hidden>出典</h2>
     <ul id="results" class="results"></ul>
   </main>
 
