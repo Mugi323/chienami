@@ -158,7 +158,7 @@
   const INPUT_MAX_HEIGHT = 160;
   const SVG_NS = "http://www.w3.org/2000/svg";
   const ICONS = {
-    chat: "M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm0 2v11.17L7.17 16H20V6H4z",
+    chat: "M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z",
     search:
       "M21.71 20.29l-5.4-5.39A8 8 0 1 0 14.9 16.3l5.39 5.4a1 1 0 0 0 1.42-1.41zM4 10a6 6 0 1 1 6 6 6 6 0 0 1-6-6z",
     spark: "M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4L12 2z",
