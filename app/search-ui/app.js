@@ -1,6 +1,10 @@
 (() => {
   "use strict";
 
+  const STORAGE_KEY = "chienami.conversations.v1";
+  const MAX_CONVERSATIONS = 50;
+  const SNIPPET_MAX_LENGTH = 280;
+
   // 回答本文を、通常のテキストと出典参照（[S1] 等）に分ける。
   // sourceIdsに含まれない番号はテキストのまま残す（LLMが存在しない番号を書いた場合）。
   function splitCitations(answer, sourceIds) {
@@ -23,149 +27,349 @@
     return parts;
   }
 
+  function truncate(text, maxLength) {
+    const chars = Array.from(text);
+    if (chars.length <= maxLength) return text;
+    return `${chars.slice(0, maxLength).join("")}…`;
+  }
+
+  // 会話のタイトル（サイドバー表示用）を最初の質問から作る。
+  function deriveTitle(question, maxLength = 30) {
+    const normalized = String(question || "").replace(/\s+/g, " ").trim();
+    if (!normalized) return "新しいチャット";
+    return truncate(normalized, maxLength);
+  }
+
+  // 会話一覧に1件を追加・置換し、更新日時の新しい順にmax件までに切り詰めた新しい配列を返す。
+  function upsertConversation(list, conversation, max = MAX_CONVERSATIONS) {
+    return [conversation, ...list.filter((c) => c.id !== conversation.id)]
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, max);
+  }
+
+  // localStorageの文字列を会話一覧に戻す。壊れたデータは捨てる（画面を壊さないことを優先）。
+  function parseConversations(raw) {
+    if (typeof raw !== "string") return [];
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch (err) {
+      return [];
+    }
+    if (!Array.isArray(data)) return [];
+    return data
+      .filter(
+        (c) =>
+          c &&
+          typeof c.id === "string" &&
+          typeof c.title === "string" &&
+          typeof c.updatedAt === "number" &&
+          Array.isArray(c.messages)
+      )
+      .sort((a, b) => b.updatedAt - a.updatedAt);
+  }
+
+  // /chatのレスポンスを、履歴に保存するAIメッセージの形にする。
+  // 出典の本文は表示に必要な長さまでに切り詰め、localStorageの容量を節約する。
+  function toAiMessage(body) {
+    return {
+      role: "ai",
+      answer: body.answer || "",
+      abstained: Boolean(body.abstained),
+      sources: (body.sources || []).map((s) => ({
+        id: s.id,
+        title: s.title,
+        url: s.url,
+        snippet: truncate(s.snippet || "", SNIPPET_MAX_LENGTH),
+        score: s.score,
+        cited: Boolean(s.cited),
+      })),
+      timings: body.timings || null,
+    };
+  }
+
+  // 会話履歴の保存先。現在はブラウザのlocalStorageだが、将来サーバ保存へ差し替えられるよう
+  // load/save/removeの3操作に閉じ込めている。storageが使えない場合はメモリ上だけで動く。
+  function createConversationStore(storage, key = STORAGE_KEY) {
+    let memory = [];
+    let useMemory = !storage;
+
+    function load() {
+      if (useMemory) return memory;
+      try {
+        memory = parseConversations(storage.getItem(key));
+      } catch (err) {
+        useMemory = true;
+      }
+      return memory;
+    }
+
+    function write(list) {
+      memory = list;
+      if (useMemory) return;
+      try {
+        storage.setItem(key, JSON.stringify(list));
+      } catch (err) {
+        useMemory = true;
+      }
+    }
+
+    return {
+      load,
+      save(conversation) {
+        const list = upsertConversation(load(), conversation);
+        write(list);
+        return list;
+      },
+      remove(id) {
+        const list = load().filter((c) => c.id !== id);
+        write(list);
+        return list;
+      },
+    };
+  }
+
   // Node.jsの単体テスト（app/search-ui/tests/）から純関数だけを読み込めるようにする。
   if (typeof module === "object" && module.exports) {
-    module.exports = { splitCitations };
+    module.exports = {
+      splitCitations,
+      deriveTitle,
+      upsertConversation,
+      parseConversations,
+      toAiMessage,
+      createConversationStore,
+    };
   }
   if (typeof document === "undefined") return;
 
-  const form = document.getElementById("search-form");
-  const input = document.getElementById("search-input");
-  const status = document.getElementById("status");
-  const resultsEl = document.getElementById("results");
-  const modeNote = document.getElementById("mode-note");
-  const answerEl = document.getElementById("answer");
-  const answerText = document.getElementById("answer-text");
-  const answerFallback = document.getElementById("answer-fallback");
-  const sourcesHeading = document.getElementById("sources-heading");
-  const modeInputs = document.querySelectorAll('input[name="mode"]');
+  const sidebar = document.getElementById("sidebar");
+  const overlay = document.getElementById("sidebar-overlay");
+  const menuBtn = document.getElementById("menu-btn");
+  const newChatBtn = document.getElementById("new-chat-btn");
+  const convList = document.getElementById("conv-list");
+  const navModeLinks = document.querySelectorAll(".nav-link[data-mode]");
+  const chatScroll = document.getElementById("chat-scroll");
+  const thread = document.getElementById("thread");
+  const form = document.getElementById("chat-form");
+  const input = document.getElementById("chat-input");
+  const sendBtn = document.getElementById("send-btn");
+  const inputNote = document.getElementById("input-note");
 
-  const PLACEHOLDERS = {
-    search: "研究室の知識を検索する",
-    ai: "研究室の知識について質問する",
+  const INPUT_MAX_HEIGHT = 160;
+  const SVG_NS = "http://www.w3.org/2000/svg";
+  const ICONS = {
+    chat: "M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm0 2v11.17L7.17 16H20V6H4z",
+    search:
+      "M21.71 20.29l-5.4-5.39A8 8 0 1 0 14.9 16.3l5.39 5.4a1 1 0 0 0 1.42-1.41zM4 10a6 6 0 1 1 6 6 6 6 0 0 1-6-6z",
+    spark: "M12 2l2.2 6.6L21 11l-6.8 2.4L12 20l-2.2-6.6L3 11l6.8-2.4L12 2z",
+    close:
+      "M6.4 5L12 10.6 17.6 5 19 6.4 13.4 12l5.6 5.6-1.4 1.4-5.6-5.6L6.4 19 5 17.6 10.6 12 5 6.4 6.4 5z",
+  };
+  const MODE_TEXT = {
+    ai: {
+      placeholder: "研究室の知識について質問する",
+      note: "研究室の知識ベースだけを根拠に回答します。回答には必ず出典を確認してください。",
+      emptyTitle: "研究室の知識に質問する",
+      emptyBody:
+        "Outlineに蓄積された研究室の知識だけを根拠に、出典付きで回答します。Enterで送信、Shift+Enterで改行できます。",
+    },
+    search: {
+      placeholder: "研究室の知識を検索する",
+      note: "結果のタイトルから、元のOutlineページを開けます。",
+      emptyTitle: "研究室の知識を検索する",
+      emptyBody: "キーワードや文章を入力すると、意味の近いOutlineの文書を探します。",
+    },
   };
 
-  function currentMode() {
-    const checked = document.querySelector('input[name="mode"]:checked');
-    return checked ? checked.value : "search";
+  let storage = null;
+  try {
+    storage = window.localStorage;
+  } catch (err) {
+    storage = null;
+  }
+  const store = createConversationStore(storage);
+
+  const state = {
+    mode: "ai",
+    conversation: null, // 表示中の会話（未保存の新しい会話も含む）
+    busy: false,
+    search: null, // { query, status: "loading" | "done" | "error", results, message }
+  };
+
+  // --- DOMヘルパー ---
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
   }
 
-  function setMode(mode) {
-    for (const el of modeInputs) {
-      el.checked = el.value === mode;
+  function icon(name, size) {
+    const svg = document.createElementNS(SVG_NS, "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("width", String(size));
+    svg.setAttribute("height", String(size));
+    svg.setAttribute("aria-hidden", "true");
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("fill", "currentColor");
+    path.setAttribute("d", ICONS[name]);
+    svg.appendChild(path);
+    return svg;
+  }
+
+  function newId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID();
     }
-    input.placeholder = PLACEHOLDERS[mode];
-    modeNote.hidden = mode !== "ai";
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
   }
 
-  function setStatus(text, isError) {
-    status.textContent = text;
-    status.classList.toggle("error", Boolean(isError));
+  function scrollToBottom() {
+    chatScroll.scrollTop = chatScroll.scrollHeight;
   }
 
-  function clearResults() {
-    resultsEl.innerHTML = "";
-    answerEl.hidden = true;
-    answerText.textContent = "";
-    answerFallback.hidden = true;
-    sourcesHeading.hidden = true;
+  // --- メッセージ描画 ---
+
+  function renderEmpty() {
+    const text = MODE_TEXT[state.mode];
+    const wrap = el("div", "chat-empty");
+    const iconWrap = el("div", "chat-empty-icon");
+    iconWrap.appendChild(icon(state.mode === "ai" ? "chat" : "search", 26));
+    wrap.appendChild(iconWrap);
+    wrap.appendChild(el("h3", null, text.emptyTitle));
+    wrap.appendChild(el("p", null, text.emptyBody));
+    return wrap;
+  }
+
+  function renderUserMessage(text, animate) {
+    const wrap = el("div", animate ? "msg-user" : "msg-user static");
+    wrap.appendChild(el("div", "msg-user-bubble", text));
+    return wrap;
+  }
+
+  function aiShell(animate, extraClass) {
+    const wrap = el("div", ["msg-ai", animate ? "" : "static", extraClass || ""].join(" ").trim());
+    const avatar = el("div", "ai-avatar");
+    avatar.appendChild(icon("spark", 14));
+    const body = el("div", "msg-ai-body");
+    wrap.appendChild(avatar);
+    wrap.appendChild(body);
+    return { wrap, body };
+  }
+
+  function renderPending() {
+    const { wrap, body } = aiShell(true);
+    const typing = el("div", "typing");
+    typing.setAttribute("aria-label", "回答を作成しています");
+    for (let i = 0; i < 3; i += 1) typing.appendChild(el("span"));
+    body.appendChild(typing);
+    body.appendChild(el("span", "typing-label", "回答を作成しています…（数十秒かかることがあります）"));
+    return wrap;
+  }
+
+  function renderErrorMessage(text) {
+    const { wrap, body } = aiShell(true, "msg-error");
+    body.appendChild(el("div", "msg-ai-text", text));
+    return wrap;
+  }
+
+  function highlightCard(card) {
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("highlight");
+    setTimeout(() => card.classList.remove("highlight"), 1600);
+  }
+
+  // 出典カードのidは、同じ会話内の複数の回答でS番号が重ならないようメッセージ番号を含める。
+  function sourceCardId(messageIndex, sourceId) {
+    return `src-${messageIndex}-${sourceId}`;
+  }
+
+  function renderAiMessage(message, messageIndex, question, animate) {
+    const { wrap, body } = aiShell(animate);
+    const sources = message.sources || [];
+
+    const text = el("div", "msg-ai-text");
+    for (const part of splitCitations(message.answer, sources.map((s) => s.id))) {
+      if (part.type === "text") {
+        text.appendChild(document.createTextNode(part.value));
+      } else {
+        const cardId = sourceCardId(messageIndex, part.value);
+        const cite = el("a", "cite", part.value);
+        cite.href = `#${cardId}`;
+        cite.addEventListener("click", (event) => {
+          event.preventDefault();
+          const card = document.getElementById(cardId);
+          if (card) highlightCard(card);
+        });
+        text.appendChild(cite);
+      }
+    }
+    body.appendChild(text);
+
+    if (message.abstained && question) {
+      const fallback = el("button", "answer-fallback", "通常の検索で探す →");
+      fallback.type = "button";
+      fallback.addEventListener("click", () => {
+        setMode("search");
+        runSearch(question);
+      });
+      body.appendChild(fallback);
+    }
+
+    const timing = formatTimings(message.timings);
+    if (timing) body.appendChild(el("div", "msg-meta", timing));
+
+    if (sources.length > 0) {
+      body.appendChild(el("div", "section-label", "出典"));
+      const list = el("ul", "results");
+      for (const source of sources) {
+        list.appendChild(createResultCard(source, source, sourceCardId(messageIndex, source.id)));
+      }
+      body.appendChild(list);
+    }
+    return wrap;
   }
 
   // 検索結果・出典で共通のカード。sourceを渡すと出典用の表示（S番号・引用有無）になる。
-  function createResultCard(result, source) {
-    const li = document.createElement("li");
-    li.className = "result-card";
+  function createResultCard(result, source, cardId) {
+    const li = el("li", "source-card");
+    const header = el("div", "result-header");
 
-    const header = document.createElement("div");
-    header.className = "result-header";
-
-    const title = document.createElement("h2");
-    title.className = "result-title";
+    const title = el("h4", "result-title");
     if (source) {
-      li.id = `source-${source.id}`;
+      li.id = cardId;
       li.classList.toggle("uncited", !source.cited);
-      const badge = document.createElement("span");
-      badge.className = "source-badge";
-      badge.textContent = source.id;
-      title.appendChild(badge);
+      title.appendChild(el("span", "source-badge", source.id));
     }
-    const titleLink = document.createElement("a");
+    const titleLink = el("a", null, result.title || "(無題)");
     titleLink.href = result.url;
     titleLink.target = "_blank";
     titleLink.rel = "noopener noreferrer";
-    titleLink.textContent = result.title || "(無題)";
     title.appendChild(titleLink);
 
-    const score = document.createElement("span");
-    score.className = "result-score";
-    score.textContent = source
-      ? `関連度 ${result.score.toFixed(2)}${source.cited ? "" : "・回答で未引用"}`
-      : `score ${result.score.toFixed(3)}`;
+    const score = el(
+      "span",
+      "result-score",
+      source
+        ? `関連度 ${Number(result.score).toFixed(2)}${source.cited ? "" : "・回答で未引用"}`
+        : `score ${Number(result.score).toFixed(3)}`
+    );
 
     header.appendChild(title);
     header.appendChild(score);
 
-    const snippet = document.createElement("p");
-    snippet.className = "result-snippet";
-    snippet.textContent = truncate(result.snippet || "", 280);
+    const snippet = el("p", "result-snippet", truncate(result.snippet || "", SNIPPET_MAX_LENGTH));
 
-    const link = document.createElement("a");
-    link.className = "result-link";
+    const link = el("a", "result-link", "Outlineで開く →");
     link.href = result.url;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "Outlineで開く →";
 
     li.appendChild(header);
     li.appendChild(snippet);
     li.appendChild(link);
     return li;
-  }
-
-  function renderResults(results) {
-    clearResults();
-    if (results.length === 0) {
-      setStatus("一致する文書が見つかりませんでした。");
-      return;
-    }
-    setStatus(`${results.length}件の結果`);
-
-    for (const result of results) {
-      resultsEl.appendChild(createResultCard(result));
-    }
-  }
-
-  function renderAnswer(body) {
-    clearResults();
-    const sources = body.sources || [];
-    answerEl.hidden = false;
-    answerEl.classList.toggle("abstained", Boolean(body.abstained));
-
-    const parts = splitCitations(
-      body.answer || "",
-      sources.map((s) => s.id)
-    );
-    for (const part of parts) {
-      if (part.type === "text") {
-        answerText.appendChild(document.createTextNode(part.value));
-      } else {
-        const cite = document.createElement("a");
-        cite.className = "cite";
-        cite.href = `#source-${part.value}`;
-        cite.textContent = part.value;
-        answerText.appendChild(cite);
-      }
-    }
-
-    answerFallback.hidden = !body.abstained;
-    setStatus(formatTimings(body.timings));
-
-    if (sources.length > 0) {
-      sourcesHeading.hidden = false;
-      for (const source of sources) {
-        resultsEl.appendChild(createResultCard(source, source));
-      }
-    }
   }
 
   function formatTimings(timings) {
@@ -174,110 +378,329 @@
     return `回答時間 ${(total / 1000).toFixed(1)}秒`;
   }
 
-  function truncate(text, maxLength) {
-    if (text.length <= maxLength) return text;
-    return `${text.slice(0, maxLength)}…`;
+  function renderConversation() {
+    const messages = state.conversation ? state.conversation.messages : [];
+    if (messages.length === 0) {
+      thread.appendChild(renderEmpty());
+      return;
+    }
+    let lastQuestion = "";
+    messages.forEach((message, index) => {
+      if (message.role === "user") {
+        lastQuestion = message.text;
+        thread.appendChild(renderUserMessage(message.text, false));
+      } else {
+        thread.appendChild(renderAiMessage(message, index, lastQuestion, false));
+      }
+    });
   }
+
+  function renderSearch() {
+    const search = state.search;
+    if (!search) {
+      thread.appendChild(renderEmpty());
+      return;
+    }
+    thread.appendChild(renderUserMessage(search.query, false));
+
+    if (search.status === "loading") {
+      thread.appendChild(el("p", "search-summary", "検索しています…"));
+      return;
+    }
+    if (search.status === "error") {
+      thread.appendChild(el("p", "search-summary error", search.message));
+      return;
+    }
+    if (search.results.length === 0) {
+      thread.appendChild(el("p", "search-summary", "一致する文書が見つかりませんでした。"));
+      return;
+    }
+    thread.appendChild(el("p", "search-summary", `${search.results.length}件の結果`));
+    const list = el("ul", "results");
+    for (const result of search.results) {
+      list.appendChild(createResultCard(result));
+    }
+    thread.appendChild(list);
+  }
+
+  function renderThread() {
+    thread.innerHTML = "";
+    if (state.mode === "ai") {
+      renderConversation();
+    } else {
+      renderSearch();
+    }
+    scrollToBottom();
+  }
+
+  // --- サイドバー ---
+
+  function renderSidebar() {
+    const conversations = store.load();
+    convList.innerHTML = "";
+    if (conversations.length === 0) {
+      convList.appendChild(el("li", "sidebar-empty", "まだ会話はありません"));
+    }
+    const activeId = state.mode === "ai" && state.conversation ? state.conversation.id : null;
+    for (const conversation of conversations) {
+      const wrap = el("li", "conv-item-wrap");
+
+      const item = el("button", "conv-item", conversation.title);
+      item.type = "button";
+      item.title = conversation.title;
+      if (conversation.id === activeId) {
+        item.classList.add("active");
+        item.setAttribute("aria-current", "true");
+      }
+      item.addEventListener("click", () => openConversation(conversation.id));
+
+      const del = el("button", "conv-delete-btn");
+      del.type = "button";
+      del.setAttribute("aria-label", `「${conversation.title}」を削除`);
+      del.appendChild(icon("close", 14));
+      del.addEventListener("click", () => deleteConversation(conversation.id));
+
+      wrap.appendChild(item);
+      wrap.appendChild(del);
+      convList.appendChild(wrap);
+    }
+
+    for (const link of navModeLinks) {
+      const active = link.dataset.mode === state.mode;
+      link.classList.toggle("active", active);
+      if (active) {
+        link.setAttribute("aria-current", "page");
+      } else {
+        link.removeAttribute("aria-current");
+      }
+    }
+  }
+
+  function openSidebar() {
+    sidebar.classList.add("sidebar-open");
+    overlay.hidden = false;
+    menuBtn.setAttribute("aria-expanded", "true");
+  }
+
+  function closeSidebar() {
+    sidebar.classList.remove("sidebar-open");
+    overlay.hidden = true;
+    menuBtn.setAttribute("aria-expanded", "false");
+  }
+
+  // --- 状態遷移 ---
+
+  function setMode(mode) {
+    state.mode = mode;
+    input.placeholder = MODE_TEXT[mode].placeholder;
+    inputNote.textContent = MODE_TEXT[mode].note;
+    renderSidebar();
+    renderThread();
+  }
+
+  function startNewChat() {
+    state.conversation = null;
+    setMode("ai");
+    closeSidebar();
+    input.focus();
+  }
+
+  function openConversation(id) {
+    const conversation = store.load().find((c) => c.id === id);
+    if (!conversation) return;
+    state.conversation = conversation;
+    setMode("ai");
+    closeSidebar();
+  }
+
+  function deleteConversation(id) {
+    store.remove(id);
+    if (state.conversation && state.conversation.id === id) {
+      state.conversation = null;
+      if (state.mode === "ai") renderThread();
+    }
+    renderSidebar();
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    sendBtn.disabled = busy;
+  }
+
+  function autoResize() {
+    input.style.height = "auto";
+    const height = Math.min(input.scrollHeight, INPUT_MAX_HEIGHT);
+    input.style.height = `${height}px`;
+    input.style.overflowY = input.scrollHeight > INPUT_MAX_HEIGHT ? "auto" : "hidden";
+  }
+
+  function clearInput() {
+    input.value = "";
+    autoResize();
+  }
+
+  // --- API呼び出し ---
 
   async function runSearch(query) {
-    clearResults();
-    setStatus("検索しています…");
-
-    let response;
-    try {
-      response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
-    } catch (err) {
-      setStatus("検索APIに接続できませんでした。しばらくしてから再度お試しください。", true);
-      return;
-    }
-
-    if (!response.ok) {
-      setStatus(`検索に失敗しました（HTTP ${response.status}）。`, true);
-      return;
-    }
-
-    let body;
-    try {
-      body = await response.json();
-    } catch (err) {
-      setStatus("検索結果の解析に失敗しました。", true);
-      return;
-    }
-
-    renderResults(body.results || []);
-  }
-
-  async function runChat(question) {
-    clearResults();
-    setStatus("回答を作成しています…（数十秒かかることがあります）");
-    form.classList.add("busy");
+    const search = { query, status: "loading", results: [], message: "" };
+    state.search = search;
+    if (state.mode === "search") renderThread();
 
     try {
       let response;
       try {
-        response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
-        });
+        response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
       } catch (err) {
-        setStatus("AI回答APIに接続できませんでした。しばらくしてから再度お試しください。", true);
-        return;
-      }
-
-      if (response.status === 503) {
-        setStatus("AI回答機能は現在利用できません。「検索」モードをお使いください。", true);
-        return;
+        throw new Error("検索APIに接続できませんでした。しばらくしてから再度お試しください。");
       }
       if (!response.ok) {
-        setStatus(`AI回答に失敗しました（HTTP ${response.status}）。`, true);
-        return;
+        throw new Error(`検索に失敗しました（HTTP ${response.status}）。`);
       }
-
       let body;
       try {
         body = await response.json();
       } catch (err) {
-        setStatus("AI回答の解析に失敗しました。", true);
-        return;
+        throw new Error("検索結果の解析に失敗しました。");
       }
+      search.status = "done";
+      search.results = body.results || [];
+    } catch (err) {
+      search.status = "error";
+      search.message = err.message;
+    }
 
-      renderAnswer(body);
-    } finally {
-      form.classList.remove("busy");
+    // 待っている間に別の検索が始まっていれば、古い結果では描画しない。
+    if (state.search === search && state.mode === "search") renderThread();
+  }
+
+  async function requestChat(question) {
+    let response;
+    try {
+      response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+    } catch (err) {
+      throw new Error("AI回答APIに接続できませんでした。しばらくしてから再度お試しください。");
+    }
+    if (response.status === 503) {
+      throw new Error("AI回答機能は現在利用できません。サイドバーの「検索」をお使いください。");
+    }
+    if (!response.ok) {
+      throw new Error(`AI回答に失敗しました（HTTP ${response.status}）。`);
+    }
+    try {
+      return await response.json();
+    } catch (err) {
+      throw new Error("AI回答の解析に失敗しました。");
     }
   }
 
-  for (const el of modeInputs) {
-    el.addEventListener("change", () => {
-      setMode(currentMode());
-      input.focus();
-    });
+  async function runChat(question) {
+    if (!state.conversation) {
+      const now = Date.now();
+      state.conversation = {
+        id: newId(),
+        title: deriveTitle(question),
+        createdAt: now,
+        updatedAt: now,
+        messages: [],
+      };
+    }
+    const conversation = state.conversation;
+    const userMessage = { role: "user", text: question };
+    conversation.messages.push(userMessage);
+
+    const empty = thread.querySelector(".chat-empty");
+    if (empty) empty.remove();
+    thread.appendChild(renderUserMessage(question, true));
+    const pending = renderPending();
+    thread.appendChild(pending);
+    scrollToBottom();
+    setBusy(true);
+
+    try {
+      const body = await requestChat(question);
+      const message = toAiMessage(body);
+      const index = conversation.messages.length;
+      conversation.messages.push(message);
+      conversation.updatedAt = Date.now();
+      store.save(conversation);
+
+      if (pending.isConnected) {
+        pending.replaceWith(renderAiMessage(message, index, question, true));
+        scrollToBottom();
+      } else if (state.mode === "ai" && state.conversation === conversation) {
+        renderThread();
+      }
+    } catch (err) {
+      // 失敗した質問は履歴に残さない（表示上は残し、入力欄へ戻して再送しやすくする）。
+      const at = conversation.messages.lastIndexOf(userMessage);
+      if (at !== -1) conversation.messages.splice(at, 1);
+      if (pending.isConnected) {
+        pending.replaceWith(renderErrorMessage(err.message));
+        scrollToBottom();
+      }
+      if (!input.value) {
+        input.value = question;
+        autoResize();
+      }
+    } finally {
+      setBusy(false);
+      renderSidebar();
+    }
   }
 
-  answerFallback.addEventListener("click", () => {
-    setMode("search");
-    const query = input.value.trim();
-    if (query) runSearch(query);
-  });
+  // --- イベント ---
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
-    if (form.classList.contains("busy")) return;
+    if (state.busy) return;
     const query = input.value.trim();
     if (!query) {
-      setStatus(
-        currentMode() === "ai" ? "質問を入力してください。" : "検索キーワードを入力してください。",
-        true
-      );
+      input.focus();
       return;
     }
-    if (currentMode() === "ai") {
+    clearInput();
+    if (state.mode === "ai") {
       runChat(query);
     } else {
       runSearch(query);
     }
   });
 
-  setMode(currentMode());
+  input.addEventListener("input", autoResize);
+  input.addEventListener("keydown", (event) => {
+    // IME変換確定のEnterでは送信しない。
+    if (event.key !== "Enter" || event.shiftKey || event.isComposing || event.keyCode === 229) {
+      return;
+    }
+    event.preventDefault();
+    form.requestSubmit();
+  });
+
+  newChatBtn.addEventListener("click", startNewChat);
+  for (const link of navModeLinks) {
+    link.addEventListener("click", () => {
+      setMode(link.dataset.mode);
+      closeSidebar();
+      input.focus();
+    });
+  }
+
+  menuBtn.addEventListener("click", () => {
+    if (sidebar.classList.contains("sidebar-open")) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+  overlay.addEventListener("click", closeSidebar);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeSidebar();
+  });
+
+  setMode("ai");
+  autoResize();
 })();
