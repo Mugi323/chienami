@@ -8,36 +8,54 @@
 </head>
 <body>
   <main class="main">
-    <h1 class="title">Chienami</h1>
-    <p class="subtitle">開きたい画面を選んでください</p>
+    <header class="hero">
+      <h1 class="logo">
+        <img src="logo.png" alt="Chienami" width="841" height="272" />
+      </h1>
+      <p class="tagline">研究室のノウハウを蓄積・共有する知識基盤</p>
+    </header>
 
-    <div class="cards">
-      <a class="card" href="https://knowledge.lab.local/">
-        <span class="card-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="28" height="28">
-            <path
-              fill="currentColor"
-              d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5a2.5 2.5 0 0 0 0 5H20v2H6.5A4.5 4.5 0 0 1 2 21.5v-15A2.5 2.5 0 0 1 4 4.5zM6.5 4A.5.5 0 0 0 6 4.5V17h13V4H6.5z"
-            />
-          </svg>
-        </span>
-        <span class="card-title">Outline</span>
-        <span class="card-desc">研究室の知識を蓄積・閲覧する</span>
-      </a>
-
+    <nav class="cards" aria-label="アプリ一覧">
       <a class="card" href="https://search.lab.local/">
         <span class="card-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" width="28" height="28">
+          <svg viewBox="0 0 24 24" width="24" height="24">
             <path
               fill="currentColor"
-              d="M21.71 20.29l-5.4-5.39A8 8 0 1 0 14.9 16.3l5.39 5.4a1 1 0 0 0 1.42-1.41zM4 10a6 6 0 1 1 6 6 6 6 0 0 1-6-6z"
+              d="M4 4h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2zm0 2v11.17L7.17 16H20V6H4z"
             />
           </svg>
         </span>
-        <span class="card-title">Chienami Search</span>
-        <span class="card-desc">研究室の知識を検索する</span>
+        <span class="card-body">
+          <span class="card-title">Chienami Search</span>
+          <span class="card-desc">研究室の知識をAIに質問・検索する</span>
+        </span>
+        <span class="card-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor" d="M13.17 5.76l6.24 6.24-6.24 6.24-1.41-1.41L15.59 13H4v-2h11.59l-3.83-3.83 1.41-1.41z" />
+          </svg>
+        </span>
       </a>
-    </div>
+
+      <a class="card" href="https://knowledge.lab.local/">
+        <span class="card-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <path
+              fill="currentColor"
+              d="M6 2h9l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm8 1.5V8h4.5L14 3.5zM8 12h8v2H8v-2zm0 4h8v2H8v-2z"
+            />
+          </svg>
+        </span>
+        <span class="card-body">
+          <span class="card-title">Outline</span>
+          <span class="card-desc">研究室の知識を蓄積・閲覧する</span>
+        </span>
+        <span class="card-arrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="18" height="18">
+            <path fill="currentColor" d="M13.17 5.76l6.24 6.24-6.24 6.24-1.41-1.41L15.59 13H4v-2h11.59l-3.83-3.83 1.41-1.41z" />
+          </svg>
+        </span>
+      </a>
+    </nav>
   </main>
 </body>
 </html>

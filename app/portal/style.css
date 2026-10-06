@@ -1,110 +1,187 @@
+/* 配色・影は Chienami Search（app/search-ui/style.css）と揃える */
 :root {
-  --bg: #ffffff;
-  --bg-elevated: #f7f7f8;
-  --text: #0d0d0d;
-  --text-muted: #6e6e80;
-  --border: #e5e5e5;
-  --accent: #10a37f;
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
+  --color-main: #84a59d; /* セージグリーン：アクセント */
+  --color-main-dark: #6a8f88; /* ホバー時に使う濃いめのメイン */
+  --color-accent: #f6bd60; /* ゴールド：差し色 */
+  --color-bg: #f7ede2; /* 温かみのあるクリーム：ページ背景 */
+  --color-bg-end: #fff4ec; /* 背景グラデーション終端 */
+  --color-text: #3d2e1e; /* 濃いブラウン：メインテキスト */
+  --color-text-mid: #7a6555; /* ミドルブラウン：補助テキスト */
+  --color-white: #ffffff;
+  --color-border: rgba(61, 46, 30, 0.1);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #212121;
-    --bg-elevated: #2f2f2f;
-    --text: #ececec;
-    --text-muted: #a9a9b3;
-    --border: #3f3f46;
-    --accent: #10a37f;
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-  }
+  --color-main-soft: rgba(132, 165, 157, 0.15);
+  --color-dot: rgba(132, 165, 157, 0.12);
+  --shadow-card: 0 1px 3px rgba(61, 46, 30, 0.06);
+  --shadow-card-hover: 0 4px 20px rgba(132, 165, 157, 0.25);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html,
 body {
   margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Kaku Gothic ProN",
-    "Yu Gothic", "Noto Sans JP", sans-serif;
+  min-height: 100%;
+}
+
+body {
   min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(circle, var(--color-dot) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-bg), var(--color-bg-end));
+  background-size: 28px 28px, 100% 100%;
+  background-attachment: fixed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-main);
+  outline-offset: 2px;
 }
 
 .main {
+  width: 100%;
   max-width: 640px;
-  margin: 0 auto;
-  padding: 96px 16px 64px;
+  margin: auto;
+  padding: 4rem 1rem;
+}
+
+/* --- ヒーロー --- */
+
+.hero {
   text-align: center;
+  margin-bottom: 2.5rem;
 }
 
-.title {
-  font-size: 28px;
-  font-weight: 700;
-  margin: 0 0 8px;
+.logo {
+  margin: 0 auto 1.25rem;
+  width: min(360px, 80vw);
+  /* 透過PNGの形をマスクにして、テキストと同じブラウンで塗る */
+  background: var(--color-text);
+  -webkit-mask: url("logo.png") center / contain no-repeat;
+  mask: url("logo.png") center / contain no-repeat;
+  aspect-ratio: 841 / 272;
 }
 
-.subtitle {
-  color: var(--text-muted);
-  font-size: 15px;
-  margin: 0 0 40px;
+.logo img {
+  display: block;
+  width: 100%;
+  height: auto;
+  /* マスク描画のため画像自体は透明にする（alt と読み上げ用に残す） */
+  opacity: 0;
 }
+
+.tagline {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* --- カード --- */
 
 .cards {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  text-align: left;
-}
-
-@media (max-width: 480px) {
-  .cards {
-    grid-template-columns: 1fr;
-  }
-  .main {
-    padding-top: 64px;
-  }
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
 .card {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.125rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
   border-radius: 16px;
-  padding: 24px 20px;
-  box-shadow: var(--shadow);
-  color: var(--text);
+  box-shadow: var(--shadow-card);
+  color: var(--color-text);
   text-decoration: none;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
 .card:hover,
 .card:focus-visible {
-  border-color: var(--accent);
+  border-color: var(--color-main);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
 }
 
 .card-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  color: var(--accent);
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--color-main-soft);
+  color: var(--color-main-dark);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.card:hover .card-icon,
+.card:focus-visible .card-icon {
+  background: var(--color-main);
+  color: var(--color-white);
+}
+
+.card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
 .card-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
 }
 
 .card-desc {
-  font-size: 13px;
-  color: var(--text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--color-text-mid);
+}
+
+.card-arrow {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--color-text-mid);
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.card:hover .card-arrow,
+.card:focus-visible .card-arrow {
+  color: var(--color-main-dark);
+  transform: translateX(3px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .card-arrow {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:focus-visible,
+  .card:hover .card-arrow,
+  .card:focus-visible .card-arrow {
+    transform: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 3rem 1rem;
+  }
 }
