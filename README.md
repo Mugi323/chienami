@@ -64,14 +64,27 @@ chienami/
 
 ## リリースブランチ
 
-研究室サーバへの導入は、Phase 4（RAG/ローカルLLM）を含まない安定版ブランチ
-`release/v1-no-rag`（Phase 1〜3: Outline知識蓄積 + Semantic Search）から行います。
-`main`は開発の最新状態（Phase 4以降を含む）を追跡するため、サーバ導入時は必ず
-リリースブランチを指定してください。
+研究室サーバへの導入は、安定版ブランチ `release/v2-rag`
+（Phase 1〜4: Outline知識蓄積 + Semantic Search + 出典付きRAG回答）から行います。
+`main`は開発の最新状態を追跡するため、サーバ導入時は必ずリリースブランチを指定してください。
 
 ```bash
-git clone -b release/v1-no-rag https://github.com/Mugi323/chienami.git
+git clone -b release/v2-rag https://github.com/Mugi323/chienami.git
 ```
+
+既存のサーバを `release/v1-no-rag` から切り替える場合:
+
+```bash
+git fetch origin
+git switch -c release/v2-rag --track origin/release/v2-rag
+```
+
+Phase 4ではLLM・Rerankerのモデル配置などが追加で必要です。
+[LLM](docs/design/llm-setup.md)・[Reranker](docs/design/reranker-setup.md)・
+[RAG](docs/design/rag-setup.md) の各手順を参照してください。
+
+Phase 1〜3のみの旧安定版（`release/v1-no-rag`）は廃止しました。その時点の状態は
+タグ `v1.0.0` で参照できます。
 
 導入手順は [docs/design/linux-server-deployment.md](docs/design/linux-server-deployment.md) を参照してください。
 
