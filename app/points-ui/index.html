@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Chienami Points</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="main">
+    <header class="hero">
+      <a class="back-link" href="https://portal.lab.local/">← ポータルへ戻る</a>
+      <h1 class="title">貢献ポイント</h1>
+      <p class="tagline">Outlineに知識を書いてくれた人をたたえるランキング</p>
+    </header>
+
+    <section class="rules" aria-label="ポイントの付け方">
+      <h2 class="section-title">ポイントの付け方</h2>
+      <ul id="rules-list" class="rules-list">
+        <li>全員が閲覧できるコレクションに公開した文書が対象です</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="ranking-title">
+      <div class="section-head">
+        <h2 id="ranking-title" class="section-title">ランキング</h2>
+        <span id="updated-at" class="updated-at"></span>
+      </div>
+      <p id="status" class="status" role="status">読み込み中…</p>
+      <ol id="ranking" class="ranking" hidden></ol>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

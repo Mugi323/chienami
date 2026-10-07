@@ -7,7 +7,7 @@ setlocal
 ::
 :: 以下の2つを1回の実行でまとめて行う。
 ::   1. hostsファイルへ knowledge.lab.local / auth.lab.local / search.lab.local /
-::      portal.lab.local を設定（名前解決。既存の同名エントリは置き換える）
+::      portal.lab.local / points.lab.local を設定（名前解決。既存の同名エントリは置き換える）
 ::   2. Chienamiのルート証明書(chienami-root-ca.crt)をこのPCへ信頼登録
 ::
 :: 実行前の準備:
@@ -47,7 +47,7 @@ echo === 1/2: hostsファイルへ名前解決を設定します ===
 :: 該当行を削除してから追記し直す。元のhostsは hosts.chienami.bak として退避する。
 set HOSTS_TMP=%TEMP%\hosts.chienami.tmp
 copy /y "%HOSTS_FILE%" "%HOSTS_FILE%.chienami.bak" >nul
-findstr /v /l /i /c:"knowledge.lab.local" /c:"auth.lab.local" /c:"search.lab.local" /c:"portal.lab.local" "%HOSTS_FILE%" > "%HOSTS_TMP%"
+findstr /v /l /i /c:"knowledge.lab.local" /c:"auth.lab.local" /c:"search.lab.local" /c:"portal.lab.local" /c:"points.lab.local" "%HOSTS_FILE%" > "%HOSTS_TMP%"
 copy /y "%HOSTS_TMP%" "%HOSTS_FILE%" >nul
 if errorlevel 1 (
     echo [エラー] hostsファイルの書き換えに失敗しました。
@@ -58,7 +58,7 @@ del "%HOSTS_TMP%" >nul 2>&1
 
 :: 末尾が改行で終わっていない場合に行が連結されないよう、先に空行を入れる
 echo.>> "%HOSTS_FILE%"
-for %%H in (knowledge.lab.local auth.lab.local search.lab.local portal.lab.local) do (
+for %%H in (knowledge.lab.local auth.lab.local search.lab.local portal.lab.local points.lab.local) do (
     echo %HOST_IP%  %%H>> "%HOSTS_FILE%"
     echo 設定しました: %HOST_IP%  %%H
 )

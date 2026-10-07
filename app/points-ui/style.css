@@ -1,0 +1,230 @@
+/* 配色は Chienami ポータル（app/portal/style.css）と揃える */
+:root {
+  --color-main: #84a59d; /* セージグリーン：アクセント */
+  --color-main-dark: #6a8f88; /* ホバー時に使う濃いめのメイン */
+  --color-accent: #f6bd60; /* ゴールド：差し色 */
+  --color-bg: #f7ede2; /* 温かみのあるクリーム：ページ背景 */
+  --color-bg-end: #fff4ec; /* 背景グラデーション終端 */
+  --color-text: #3d2e1e; /* 濃いブラウン：メインテキスト */
+  --color-text-mid: #7a6555; /* ミドルブラウン：補助テキスト */
+  --color-white: #ffffff;
+  --color-border: rgba(61, 46, 30, 0.1);
+
+  --color-main-soft: rgba(132, 165, 157, 0.15);
+  --color-dot: rgba(132, 165, 157, 0.12);
+  --shadow-card: 0 1px 3px rgba(61, 46, 30, 0.06);
+  --shadow-card-hover: 0 4px 20px rgba(132, 165, 157, 0.25);
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  background-image:
+    radial-gradient(circle, var(--color-dot) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--color-bg), var(--color-bg-end));
+  background-size: 28px 28px, 100% 100%;
+  background-attachment: fixed;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-main);
+  outline-offset: 2px;
+}
+
+.main {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 3rem 1rem 4rem;
+}
+
+/* --- ヘッダー --- */
+
+.hero {
+  margin-bottom: 2rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: var(--color-text-mid);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  color: var(--color-main-dark);
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.tagline {
+  margin: 0;
+  font-size: 0.95rem;
+  color: var(--color-text-mid);
+}
+
+/* --- セクション --- */
+
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.updated-at {
+  font-size: 0.8rem;
+  color: var(--color-text-mid);
+}
+
+.rules {
+  margin-bottom: 2rem;
+  padding: 1rem 1.125rem;
+  background: var(--color-main-soft);
+  border-radius: 16px;
+}
+
+.rules-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.88rem;
+  line-height: 1.8;
+}
+
+.status {
+  margin: 0;
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-mid);
+}
+
+.status-error {
+  color: #b5533c;
+}
+
+/* --- ランキング --- */
+
+.ranking {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.875rem 1.125rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+
+.rank-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-main-soft);
+  color: var(--color-main-dark);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-1 .rank-badge {
+  background: var(--color-accent);
+  color: var(--color-text);
+}
+
+.rank-2 .rank-badge {
+  background: #d9d4cf;
+  color: var(--color-text);
+}
+
+.rank-3 .rank-badge {
+  background: #e3b48f;
+  color: var(--color-text);
+}
+
+.rank-1 {
+  border-color: var(--color-accent);
+}
+
+.rank-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.rank-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rank-meta {
+  font-size: 0.8rem;
+  color: var(--color-text-mid);
+}
+
+.rank-points {
+  flex-shrink: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-main-dark);
+  font-variant-numeric: tabular-nums;
+}
+
+.rank-unit {
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+@media (max-width: 480px) {
+  .main {
+    padding: 2rem 1rem 3rem;
+  }
+
+  .rank-item {
+    gap: 0.75rem;
+    padding: 0.75rem 0.875rem;
+  }
+}

@@ -7,6 +7,8 @@ Dense + KeywordをRRFで統合し、Rerankerで並べ替える。
 
 /chat（Phase 4）は出典付きRAG回答を返す（rag.py）。LLM・Rerankerが停止していても
 /search（semantic）は動作し続け、/chatのみが503を返す（各Phaseは単独で価値を持つ）。
+
+/points（Issue #77）は文書作成量に応じた貢献ポイントのランキングを返す（points.py）。
 """
 
 from __future__ import annotations
@@ -21,6 +23,7 @@ from qdrant_client import QdrantClient
 
 from .embedding_client import EmbeddingClient
 from .llm_client import LLMClient
+from .points import OutlineDocumentSource, PointRules, PointsService
 from .rag import AIServiceError, EmbeddingError, RagService
 from .reranker_client import RerankerClient
 from .search import SearchService, dedupe_chunks
@@ -53,6 +56,12 @@ LLM_TIMEOUT_SECONDS = float(_env("LLM_TIMEOUT_SECONDS", "120"))
 RAG_TOP_K = int(_env("RAG_TOP_K", "5"))
 RAG_MAX_TOP_K = 10
 RAG_MIN_RERANK_SCORE = float(_env("RAG_MIN_RERANK_SCORE", "0.3"))
+# 貢献ポイント（Issue #77）。OUTLINE_API_TOKEN はindexerと共用する（未設定なら/pointsのみ503）。
+OUTLINE_INTERNAL_URL = _env("OUTLINE_INTERNAL_URL", "http://outline:3000")
+OUTLINE_API_TOKEN = _env("OUTLINE_API_TOKEN")
+POINTS_PER_DOCUMENT = int(_env("POINTS_PER_DOCUMENT", "10"))
+POINTS_CHARACTERS_PER_POINT = int(_env("POINTS_CHARACTERS_PER_POINT", "100"))
+POINTS_CACHE_SECONDS = float(_env("POINTS_CACHE_SECONDS", "300"))
 
 app = FastAPI(title="Chienami API")
 
@@ -71,6 +80,14 @@ rag_service = RagService(
     candidates=HYBRID_CANDIDATES,
     top_k=RAG_TOP_K,
     min_score=RAG_MIN_RERANK_SCORE,
+)
+points_service = PointsService(
+    OutlineDocumentSource(OUTLINE_INTERNAL_URL, OUTLINE_API_TOKEN) if OUTLINE_API_TOKEN else None,
+    PointRules(
+        points_per_document=POINTS_PER_DOCUMENT,
+        characters_per_point=POINTS_CHARACTERS_PER_POINT,
+    ),
+    cache_seconds=POINTS_CACHE_SECONDS,
 )
 
 
@@ -110,6 +127,26 @@ class ChatResponse(BaseModel):
     abstained: bool
     sources: list[ChatSourceResponse]
     timings: dict[str, int]
+
+
+class PointRulesResponse(BaseModel):
+    points_per_document: int
+    characters_per_point: int
+
+
+class UserPointsResponse(BaseModel):
+    rank: int
+    user_id: str
+    name: str
+    documents: int
+    characters: int
+    points: int
+
+
+class PointsResponse(BaseModel):
+    updated_at: float
+    rules: PointRulesResponse
+    users: list[UserPointsResponse]
 
 
 @app.get("/healthz")
@@ -185,4 +222,21 @@ def chat(request: ChatRequest) -> ChatResponse:
             for s in result.sources
         ],
         timings=result.timings_ms,
+    )
+
+
+@app.get("/points", response_model=PointsResponse)
+def points() -> PointsResponse:
+    if not points_service.configured:
+        raise HTTPException(status_code=503, detail="points service not configured")
+    try:
+        updated_at, users = points_service.ranking()
+    except Exception as exc:
+        logger.exception("Outline文書の集計に失敗しました")
+        raise HTTPException(status_code=502, detail="outline service error") from exc
+
+    return PointsResponse(
+        updated_at=updated_at,
+        rules=PointRulesResponse(**points_service.rules.__dict__),
+        users=[UserPointsResponse(**u.__dict__) for u in users],
     )
