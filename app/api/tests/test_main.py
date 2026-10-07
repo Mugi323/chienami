@@ -92,8 +92,8 @@ def test_chat_returns_answer_with_sources(monkeypatch):
     chunk = Chunk("d1", "PCR手順", "https://knowledge.lab.local/doc/d1", 2, "58度", 0.95)
     captured = {}
 
-    def _answer(question, top_k=None):
-        captured.update(question=question, top_k=top_k)
+    def _answer(question, top_k=None, history=None):
+        captured.update(question=question, top_k=top_k, history=history)
         return RagAnswer(
             "58度です[S1]。",
             abstained=False,
@@ -105,7 +105,7 @@ def test_chat_returns_answer_with_sources(monkeypatch):
     resp = client.post("/chat", json={"question": "  温度は？ ", "top_k": 3})
     assert resp.status_code == 200
     body = resp.json()
-    assert captured == {"question": "温度は？", "top_k": 3}
+    assert captured == {"question": "温度は？", "top_k": 3, "history": []}
     assert body["answer"] == "58度です[S1]。"
     assert body["abstained"] is False
     assert body["sources"] == [
@@ -123,18 +123,47 @@ def test_chat_returns_answer_with_sources(monkeypatch):
     assert body["timings"] == {"search_ms": 10, "rerank_ms": 20, "llm_ms": 30}
 
 
+def test_chat_passes_history(monkeypatch):
+    from chienami_api.rag import RagAnswer, Turn
+
+    captured = {}
+
+    def _answer(question, top_k=None, history=None):
+        captured["history"] = history
+        return RagAnswer("答え", abstained=False, sources=[], timings_ms={})
+
+    monkeypatch.setattr(main.rag_service, "answer", _answer)
+    resp = client.post(
+        "/chat",
+        json={
+            "question": "その手順は？",
+            "history": [
+                {"role": "user", "content": "PCRとは？"},
+                {"role": "assistant", "content": "DNAを増やす方法です。"},
+            ],
+        },
+    )
+    assert resp.status_code == 200
+    assert captured["history"] == [
+        Turn("user", "PCRとは？"),
+        Turn("assistant", "DNAを増やす方法です。"),
+    ]
+
+
 def test_chat_validates_request():
     assert client.post("/chat", json={}).status_code == 422
     assert client.post("/chat", json={"question": ""}).status_code == 422
     assert client.post("/chat", json={"question": "   "}).status_code == 422
     assert client.post("/chat", json={"question": "q", "top_k": 0}).status_code == 422
     assert client.post("/chat", json={"question": "q", "top_k": 11}).status_code == 422
+    bad_role = {"question": "q", "history": [{"role": "system", "content": "x"}]}
+    assert client.post("/chat", json=bad_role).status_code == 422
 
 
 def test_chat_returns_503_when_ai_service_down(monkeypatch):
     from chienami_api.rag import AIServiceError
 
-    def _raise(question, top_k=None):
+    def _raise(question, top_k=None, history=None):
         raise AIServiceError("llm error")
 
     monkeypatch.setattr(main.rag_service, "answer", _raise)
@@ -144,7 +173,7 @@ def test_chat_returns_503_when_ai_service_down(monkeypatch):
 def test_chat_returns_502_when_embedding_down(monkeypatch):
     from chienami_api.rag import EmbeddingError
 
-    def _raise(question, top_k=None):
+    def _raise(question, top_k=None, history=None):
         raise EmbeddingError("down")
 
     monkeypatch.setattr(main.rag_service, "answer", _raise)

@@ -2,16 +2,23 @@ import pytest
 
 from chienami_api.rag import (
     ABSTAIN_ANSWER,
+    HISTORY_MAX_CHARS,
     NO_ANSWER_TEXT,
+    REWRITE_SYSTEM_PROMPT,
+    SEARCH_QUERY_MAX_CHARS,
     SOURCE_MAX_CHARS,
     SYSTEM_PROMPT,
     AIServiceError,
     EmbeddingError,
     RagService,
+    Turn,
     build_messages,
+    build_rewrite_messages,
     extract_citations,
     is_no_answer,
+    parse_search_query,
     select_sources,
+    trim_history,
 )
 from chienami_api.search import Chunk
 
@@ -55,6 +62,51 @@ def test_build_messages_truncates_long_source():
     messages = build_messages("q", [_chunk("a", 0.9, "あ" * (SOURCE_MAX_CHARS + 100))])
     assert "あ" * SOURCE_MAX_CHARS in messages[1]["content"]
     assert "あ" * (SOURCE_MAX_CHARS + 1) not in messages[1]["content"]
+
+
+def test_build_messages_puts_history_between_system_and_question():
+    history = [Turn("user", "PCRの温度は？"), Turn("assistant", "58度です。")]
+    messages = build_messages("時間は？", [_chunk("a", 0.9, "30秒")], history)
+    assert [m["role"] for m in messages] == ["system", "user", "assistant", "user"]
+    assert messages[1]["content"] == "PCRの温度は？"
+    assert messages[2]["content"] == "58度です。"
+    assert "30秒" in messages[3]["content"] and "時間は？" in messages[3]["content"]
+
+
+def test_trim_history_keeps_recent_strips_citations_and_truncates():
+    history = [
+        Turn("user", "古い質問"),
+        Turn("assistant", "古い回答[S1]"),
+        Turn("user", "  PCRの温度は？ "),
+        Turn("assistant", "58度です[S1][S2]。"),
+        Turn("user", "あ" * (HISTORY_MAX_CHARS + 10)),
+        Turn("assistant", "[S1]"),
+    ]
+    trimmed = trim_history(history, max_messages=4)
+    assert trimmed == [
+        Turn("user", "PCRの温度は？"),
+        Turn("assistant", "58度です。"),
+        Turn("user", "あ" * HISTORY_MAX_CHARS),
+    ]
+    assert trim_history(history, max_messages=0) == []
+
+
+def test_build_rewrite_messages_includes_conversation_and_question():
+    messages = build_rewrite_messages(
+        "その手順は？", [Turn("user", "PCRとは？"), Turn("assistant", "DNAを増やす方法です。")]
+    )
+    assert messages[0] == {"role": "system", "content": REWRITE_SYSTEM_PROMPT}
+    user = messages[1]["content"]
+    assert "ユーザー: PCRとは？" in user
+    assert "アシスタント: DNAを増やす方法です。" in user
+    assert user.index("DNAを増やす") < user.index("その手順は？")
+
+
+def test_parse_search_query():
+    assert parse_search_query("PCRの手順", "q") == "PCRの手順"
+    assert parse_search_query("\n検索クエリ：「PCRの手順」\n説明", "q") == "PCRの手順"
+    assert parse_search_query("  \n ", "元の質問") == "元の質問"
+    assert len(parse_search_query("あ" * 500, "q")) == SEARCH_QUERY_MAX_CHARS
 
 
 def test_system_prompt_states_design_principles():
@@ -115,12 +167,20 @@ class _Reranker:
 
 
 class _LLM:
-    def __init__(self, answer="", error=None):
+    def __init__(self, answer="", error=None, rewrite="書き換えたクエリ", rewrite_error=None):
         self.answer = answer
         self.error = error
+        self.rewrite = rewrite
+        self.rewrite_error = rewrite_error
         self.messages = None
+        self.rewrite_messages = None
 
     def chat(self, messages):
+        if messages[0]["content"] == REWRITE_SYSTEM_PROMPT:
+            self.rewrite_messages = messages
+            if self.rewrite_error:
+                raise self.rewrite_error
+            return self.rewrite
         self.messages = messages
         if self.error:
             raise self.error
@@ -214,3 +274,59 @@ def test_answer_raises_ai_service_error_on_llm_failure():
     llm = _LLM(error=RuntimeError("down"))
     with pytest.raises(AIServiceError):
         _service([_chunk("a", 0)], [(0, 0.9)], llm).answer("q")
+
+
+# --- 会話履歴（Issue #87） ---
+
+
+class _RecordingEmbedder(_Embedder):
+    def __init__(self):
+        super().__init__()
+        self.texts = None
+
+    def embed(self, texts):
+        self.texts = texts
+        return super().embed(texts)
+
+
+def test_answer_with_history_searches_with_rewritten_query():
+    search = _Search([_chunk("a", 0, "手順本文")])
+    embedder = _RecordingEmbedder()
+    llm = _LLM("手順です[S1]。", rewrite="PCRの手順")
+    history = [Turn("user", "PCRとは？"), Turn("assistant", "DNAを増やす方法です[S1]。")]
+    result = RagService(search, embedder, _Reranker([(0, 0.9)]), llm).answer(
+        "その手順は？", history=history
+    )
+
+    assert embedder.texts == ["PCRの手順"]
+    assert search.calls[0][0] == "PCRの手順"
+    assert "その手順は？" in llm.rewrite_messages[1]["content"]
+    # 回答には書き換え前の質問と、[Sn]を除いた履歴を渡す
+    assert llm.messages[1] == {"role": "user", "content": "PCRとは？"}
+    assert llm.messages[2] == {"role": "assistant", "content": "DNAを増やす方法です。"}
+    assert llm.messages[3]["content"].endswith("その手順は？")
+    assert result.answer == "手順です[S1]。"
+    assert "rewrite_ms" in result.timings_ms
+
+
+def test_answer_without_history_does_not_rewrite():
+    embedder = _RecordingEmbedder()
+    llm = _LLM("答え[S1]")
+    RagService(_Search([_chunk("a", 0)]), embedder, _Reranker([(0, 0.9)]), llm).answer("質問")
+    assert llm.rewrite_messages is None
+    assert embedder.texts == ["質問"]
+
+
+def test_answer_ignores_history_when_disabled():
+    llm = _LLM("答え[S1]")
+    _service([_chunk("a", 0)], [(0, 0.9)], llm, history_messages=0).answer(
+        "質問", history=[Turn("user", "前の質問")]
+    )
+    assert llm.rewrite_messages is None
+    assert len(llm.messages) == 2
+
+
+def test_answer_raises_ai_service_error_on_rewrite_failure():
+    llm = _LLM(rewrite_error=RuntimeError("down"))
+    with pytest.raises(AIServiceError):
+        _service([_chunk("a", 0)], [(0, 0.9)], llm).answer("q", history=[Turn("user", "前")])
