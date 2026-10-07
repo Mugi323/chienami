@@ -1,7 +1,8 @@
 """出典付きRAG回答（Phase 4, design書5.2節）。
 
 流れ:
-  質問をEmbedding → Hybrid検索の候補（Dense + Keyword → RRF）→ Rerank
+  （会話の続きなら）履歴と質問からLLMで単独の検索クエリを作る（Issue #87）
+  → 検索クエリをEmbedding → Hybrid検索の候補（Dense + Keyword → RRF）→ Rerank
   → 関連度がしきい値以上の上位k件を根拠として選ぶ
   → 根拠が1件もなければLLMを呼ばずに回答を控える
   → [S1]..[Sk] を付けた根拠をLLMに渡し、各主張にSource IDを付けて回答させる
@@ -15,7 +16,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Literal, Protocol
 
 from .search import Chunk, Reranker, SearchService, rerank_chunks
 
@@ -45,6 +46,21 @@ SOURCE_MAX_CHARS = 1500
 
 _CITATION = re.compile(r"\[S(\d+)\]")
 
+# 会話履歴の1発言としてLLMに渡す本文の上限。履歴は文脈の把握に使うだけなので短めにする。
+HISTORY_MAX_CHARS = 1000
+# 書き換えた検索クエリの上限（LLMが質問への回答まで書いてしまった場合の保険）。
+SEARCH_QUERY_MAX_CHARS = 200
+
+# 「それの手順は？」のような続きの質問は、そのままでは検索できないため、
+# 会話の文脈を補った単独の検索クエリに書き換える。
+REWRITE_SYSTEM_PROMPT = """あなたは研究室の知識ベースの検索クエリを作るアシスタントです。
+これまでの会話と最新の質問から、最新の質問を単独で読んでも意味が通る検索クエリに書き換えてください。
+
+規則:
+1. 「それ」「その手順」などの指示語や省略を、会話に出てきた具体的な語に置き換えること。
+2. 最新の質問が会話と無関係なら、最新の質問をそのまま出力すること。
+3. 質問には答えないこと。検索クエリを1行だけ、説明や前置きを付けずに出力すること。"""
+
 
 class Embedder(Protocol):
     def embed(self, texts: list[str]) -> list[list[float]]: ...
@@ -52,6 +68,14 @@ class Embedder(Protocol):
 
 class ChatModel(Protocol):
     def chat(self, messages: list[dict[str, str]]) -> str: ...
+
+
+@dataclass(frozen=True)
+class Turn:
+    """会話履歴の1発言（Issue #87）。"""
+
+    role: Literal["user", "assistant"]
+    content: str
 
 
 @dataclass(frozen=True)
@@ -82,7 +106,47 @@ def select_sources(chunks: list[Chunk], top_k: int, min_score: float) -> list[Ch
     return [c for c in chunks if c.score >= min_score][:top_k]
 
 
-def build_messages(question: str, sources: list[Chunk]) -> list[dict[str, str]]:
+def trim_history(history: list[Turn], max_messages: int) -> list[Turn]:
+    """直近max_messages件に絞り、各発言を短くする。
+
+    過去の回答の [Sn] は当時の根拠を指し、今回の根拠の番号と食い違うため取り除く。
+    """
+    if max_messages <= 0:
+        return []
+    trimmed = []
+    for turn in history[-max_messages:]:
+        content = turn.content
+        if turn.role == "assistant":
+            content = _CITATION.sub("", content)
+        content = content.strip()[:HISTORY_MAX_CHARS]
+        if content:
+            trimmed.append(Turn(turn.role, content))
+    return trimmed
+
+
+def build_rewrite_messages(question: str, history: list[Turn]) -> list[dict[str, str]]:
+    lines = [f"{'ユーザー' if t.role == 'user' else 'アシスタント'}: {t.content}" for t in history]
+    conversation = "\n\n".join(lines)
+    user = f"# これまでの会話\n\n{conversation}\n\n# 最新の質問\n\n{question}\n\n# 検索クエリ"
+    return [
+        {"role": "system", "content": REWRITE_SYSTEM_PROMPT},
+        {"role": "user", "content": user},
+    ]
+
+
+def parse_search_query(text: str, fallback: str) -> str:
+    """LLMの出力から検索クエリを取り出す。使えない出力ならfallback（元の質問）を返す。"""
+    for line in text.strip().splitlines():
+        query = re.sub(r"^(検索クエリ|クエリ)\s*[:：]\s*", "", line.strip())
+        query = query.strip("「」\"'` ")
+        if query:
+            return query[:SEARCH_QUERY_MAX_CHARS]
+    return fallback
+
+
+def build_messages(
+    question: str, sources: list[Chunk], history: list[Turn] | None = None
+) -> list[dict[str, str]]:
     blocks = []
     for i, chunk in enumerate(sources, start=1):
         text = chunk.text[:SOURCE_MAX_CHARS]
@@ -91,6 +155,7 @@ def build_messages(question: str, sources: list[Chunk]) -> list[dict[str, str]]:
     user = f"# 資料\n\n{context}\n\n# 質問\n\n{question}"
     return [
         {"role": "system", "content": SYSTEM_PROMPT},
+        *({"role": t.role, "content": t.content} for t in history or []),
         {"role": "user", "content": user},
     ]
 
@@ -120,6 +185,7 @@ class RagService:
         candidates: int = 20,
         top_k: int = 5,
         min_score: float = 0.3,
+        history_messages: int = 6,
     ) -> None:
         self._search = search
         self._embedder = embedder
@@ -128,24 +194,38 @@ class RagService:
         self._candidates = candidates
         self._top_k = top_k
         self._min_score = min_score
+        self._history_messages = history_messages
 
-    def answer(self, question: str, top_k: int | None = None) -> RagAnswer:
+    def answer(
+        self, question: str, top_k: int | None = None, history: list[Turn] | None = None
+    ) -> RagAnswer:
         top_k = top_k or self._top_k
+        history = trim_history(history or [], self._history_messages)
         timings: dict[str, int] = {}
+
+        query = question
+        if history:
+            started = time.perf_counter()
+            try:
+                rewritten = self._llm.chat(build_rewrite_messages(question, history))
+            except Exception as exc:
+                raise AIServiceError("llm error (query rewrite)") from exc
+            query = parse_search_query(rewritten, fallback=question)
+            timings["rewrite_ms"] = _elapsed_ms(started)
 
         started = time.perf_counter()
         try:
-            vectors = self._embedder.embed([question])
+            vectors = self._embedder.embed([query])
         except Exception as exc:
             raise EmbeddingError("embedding service error") from exc
         if not vectors:
             raise EmbeddingError("embedding service returned no vector")
-        candidates = self._search.candidate_chunks(question, vectors[0], self._candidates)
+        candidates = self._search.candidate_chunks(query, vectors[0], self._candidates)
         timings["search_ms"] = _elapsed_ms(started)
 
         started = time.perf_counter()
         try:
-            ranked = rerank_chunks(question, candidates, self._reranker)
+            ranked = rerank_chunks(query, candidates, self._reranker)
         except Exception as exc:
             raise AIServiceError("reranker error") from exc
         timings["rerank_ms"] = _elapsed_ms(started)
@@ -162,7 +242,7 @@ class RagService:
 
         started = time.perf_counter()
         try:
-            answer = self._llm.chat(build_messages(question, selected))
+            answer = self._llm.chat(build_messages(question, selected, history))
         except Exception as exc:
             raise AIServiceError("llm error") from exc
         timings["llm_ms"] = _elapsed_ms(started)
@@ -174,7 +254,8 @@ class RagService:
         ]
         abstained = is_no_answer(answer)
         logger.info(
-            "RAG: 根拠%d件（引用%d件）, abstained=%s, search=%dms rerank=%dms llm=%dms",
+            "RAG: 履歴%d件, 根拠%d件（引用%d件）, abstained=%s, search=%dms rerank=%dms llm=%dms",
+            len(history),
             len(selected),
             len(cited),
             abstained,

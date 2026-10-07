@@ -4,6 +4,8 @@
   const STORAGE_KEY = "chienami.conversations.v1";
   const MAX_CONVERSATIONS = 50;
   const SNIPPET_MAX_LENGTH = 280;
+  // /chatに会話の文脈として送る直近の発言数（質問と回答で1往復2件）。API側でも件数を絞る。
+  const HISTORY_MAX_MESSAGES = 6;
 
   // 回答本文を、通常のテキストと出典参照（[S1] 等）に分ける。
   // sourceIdsに含まれない番号はテキストのまま残す（LLMが存在しない番号を書いた場合）。
@@ -194,6 +196,19 @@
     };
   }
 
+  // 会話のメッセージ列を、/chatに送る履歴（古い順, 直近max件）にする。
+  function buildChatHistory(messages, max = HISTORY_MAX_MESSAGES) {
+    const history = [];
+    for (const m of messages || []) {
+      if (m.role === "user" && m.text) {
+        history.push({ role: "user", content: m.text });
+      } else if (m.role === "ai" && m.answer) {
+        history.push({ role: "assistant", content: m.answer });
+      }
+    }
+    return max > 0 ? history.slice(-max) : [];
+  }
+
   // 会話履歴の保存先。現在はブラウザのlocalStorageだが、将来サーバ保存へ差し替えられるよう
   // load/save/removeの3操作に閉じ込めている。storageが使えない場合はメモリ上だけで動く。
   function createConversationStore(storage, key = STORAGE_KEY) {
@@ -245,6 +260,7 @@
       upsertConversation,
       parseConversations,
       toAiMessage,
+      buildChatHistory,
       createConversationStore,
     };
   }
@@ -792,13 +808,13 @@
     if (state.search === search && state.mode === "search") renderThread();
   }
 
-  async function requestChat(question) {
+  async function requestChat(question, history) {
     let response;
     try {
       response = await fetch("api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
+        body: JSON.stringify({ question, history }),
       });
     } catch (err) {
       throw new Error("AI回答APIに接続できませんでした。しばらくしてから再度お試しください。");
@@ -828,6 +844,7 @@
       };
     }
     const conversation = state.conversation;
+    const history = buildChatHistory(conversation.messages);
     const userMessage = { role: "user", text: question };
     conversation.messages.push(userMessage);
 
@@ -840,7 +857,7 @@
     setBusy(true);
 
     try {
-      const body = await requestChat(question);
+      const body = await requestChat(question, history);
       const message = toAiMessage(body);
       const index = conversation.messages.length;
       conversation.messages.push(message);

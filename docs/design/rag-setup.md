@@ -5,7 +5,9 @@ chienami-api の `POST /chat` は、研究室の知識ベースを根拠にし�
 
 ## 処理の流れ
 
-1. 質問をEmbeddingする
+0. 会話の続き（リクエストに `history` がある）なら、直近 `RAG_HISTORY_MESSAGES` 件の会話と質問から、
+   LLMで単独で意味が通る検索クエリを作る（「その手順は？」→「PCRの手順」, Issue #87）。以降の検索・Rerankはこのクエリで行う
+1. 質問（または書き換えた検索クエリ）をEmbeddingする
 2. ハイブリッド検索の候補を集める（Dense + Keyword → RRF、上位 `API_HYBRID_CANDIDATES` 件。
    [search-api-setup.md](search-api-setup.md) 4節）
 3. Reranker（[reranker-setup.md](reranker-setup.md)）で関連度順に並べ替える
@@ -13,6 +15,7 @@ chienami-api の `POST /chat` は、研究室の知識ベースを根拠にし�
 5. **根拠が1件もなければ、LLMを呼ばずに回答を控える**（`abstained: true`）
 6. 根拠に `[S1]`〜`[Sk]` を付けてLLMに渡す。system promptはdesign書5.2節の3原則
    （根拠にない内容を断定しない / 分からなければ「資料からは分かりません。」と答える / 各文にSource IDを付ける）
+   会話の続きなら、根拠の前に過去の質問と回答（`[Sn]` は今回の番号と食い違うため除く）も渡す
 7. 回答中の `[Sn]` を拾い、各根拠に `cited` を付けて返す
 
 LLM（Qwen3）の思考モードは無効にして呼び出す（[llm-setup.md](llm-setup.md) の既知の制約への対応）。
@@ -34,12 +37,13 @@ LLM（Qwen3）の思考モードは無効にして呼び出す（[llm-setup.md](
 | --- | --- | --- |
 | `RAG_TOP_K` | 5 | LLMに渡す根拠の最大件数（リクエストの `top_k` で1〜10の範囲で上書き可） |
 | `RAG_MIN_RERANK_SCORE` | 0.3 | 根拠として採用するRerank関連度の下限 |
+| `RAG_HISTORY_MESSAGES` | 6 | 文脈としてLLMに渡す直近の発言数（1往復2件）。0で履歴を使わない |
 | `LLM_MAX_TOKENS` | 1024 | 回答の最大生成トークン数 |
 | `LLM_TIMEOUT_SECONDS` | 120 | LLM応答待ちのタイムアウト |
 | `API_HYBRID_CANDIDATES` | 20 | Rerankerに渡す候補チャンク数 |
 
 ログには、根拠の件数・引用された件数・回答を控えたかどうか・各段階の処理時間を出す。
-質問本文はログに出さない。
+質問本文（書き換えた検索クエリを含む）はログに出さない。
 
 ## 動作確認
 
@@ -62,4 +66,5 @@ docker compose run --rm --no-deps --entrypoint sh outline -c \
 - [ ] 知識ベースにない内容（例: 「明日の天気は？」）を質問すると、`abstained: true` になる
 - [ ] `timings` の各値（目安: 合計10秒以内）
 - [ ] `RAG_MIN_RERANK_SCORE` の妥当性（代表的な質問で、関連する文書の関連度と無関係な文書の関連度を見比べて調整する）
+- [ ] 「PCRとは？」→「その手順は？」のように続けて質問すると、前の話題を踏まえた根拠と回答が返る（`timings.rewrite_ms` の目安: 数秒以内）
 - [ ] `docker compose stop llm reranker` の状態で、`/search` が動き、`/chat` が503を返す

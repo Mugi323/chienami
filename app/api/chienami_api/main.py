@@ -24,7 +24,7 @@ from qdrant_client import QdrantClient
 from .embedding_client import EmbeddingClient
 from .llm_client import LLMClient
 from .points import OutlineDocumentSource, PointRules, PointsService
-from .rag import AIServiceError, EmbeddingError, RagService
+from .rag import AIServiceError, EmbeddingError, RagService, Turn
 from .reranker_client import RerankerClient
 from .search import SearchService, dedupe_chunks
 
@@ -56,6 +56,9 @@ LLM_TIMEOUT_SECONDS = float(_env("LLM_TIMEOUT_SECONDS", "120"))
 RAG_TOP_K = int(_env("RAG_TOP_K", "5"))
 RAG_MAX_TOP_K = 10
 RAG_MIN_RERANK_SCORE = float(_env("RAG_MIN_RERANK_SCORE", "0.3"))
+# 会話の文脈としてLLMに渡す直近の発言数（質問と回答で1往復2件, Issue #87）。0で履歴を使わない。
+RAG_HISTORY_MESSAGES = int(_env("RAG_HISTORY_MESSAGES", "6"))
+RAG_MAX_HISTORY = 50
 # 貢献ポイント（Issue #77）。OUTLINE_API_TOKEN はindexerと共用する（未設定なら/pointsのみ503）。
 OUTLINE_INTERNAL_URL = _env("OUTLINE_INTERNAL_URL", "http://outline:3000")
 OUTLINE_API_TOKEN = _env("OUTLINE_API_TOKEN")
@@ -80,6 +83,7 @@ rag_service = RagService(
     candidates=HYBRID_CANDIDATES,
     top_k=RAG_TOP_K,
     min_score=RAG_MIN_RERANK_SCORE,
+    history_messages=RAG_HISTORY_MESSAGES,
 )
 points_service = PointsService(
     OutlineDocumentSource(OUTLINE_INTERNAL_URL, OUTLINE_API_TOKEN) if OUTLINE_API_TOKEN else None,
@@ -105,9 +109,17 @@ class SearchResponse(BaseModel):
     results: list[SearchResultResponse]
 
 
+class ChatTurn(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(..., max_length=20000)
+
+
 class ChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=2000, description="質問")
     top_k: int | None = Field(None, ge=1, le=RAG_MAX_TOP_K, description="根拠の最大件数")
+    history: list[ChatTurn] = Field(
+        default_factory=list, max_length=RAG_MAX_HISTORY, description="これまでの会話（古い順）"
+    )
 
 
 class ChatSourceResponse(BaseModel):
@@ -193,7 +205,11 @@ def chat(request: ChatRequest) -> ChatResponse:
     if not question:
         raise HTTPException(status_code=422, detail="question must not be blank")
     try:
-        result = rag_service.answer(question, top_k=request.top_k)
+        result = rag_service.answer(
+            question,
+            top_k=request.top_k,
+            history=[Turn(t.role, t.content) for t in request.history],
+        )
     except EmbeddingError as exc:
         logger.exception("Embedding取得に失敗しました")
         raise HTTPException(status_code=502, detail="embedding service error") from exc

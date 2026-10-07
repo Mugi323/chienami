@@ -240,6 +240,19 @@ Content-Type: application/json
 
 `top_k`（根拠の最大件数, 1〜10）は省略可能。省略時は `RAG_TOP_K`（既定5）。
 
+会話の続きとして質問する場合は、これまでの会話を `history`（古い順）に入れる（省略可能）。
+
+```json
+{"question": "失敗したときは？",
+ "history": [
+   {"role": "user", "content": "PCRのアニーリング温度は何度にしていますか？"},
+   {"role": "assistant", "content": "標準プロトコルでは58度に設定しています[S1]。"}
+ ]}
+```
+
+`history` があるときは、まず会話と質問からLLMで単独の検索クエリ（例:「PCRが失敗したときの対処」）を作って
+検索し、回答の生成時にも会話をLLMに渡す。使うのは直近 `RAG_HISTORY_MESSAGES`（既定6）件のみ。
+
 ## Phase 4 chatレスポンス例
 
 ```json
@@ -258,6 +271,8 @@ Content-Type: application/json
   "timings": {"search_ms": 45, "rerank_ms": 120, "llm_ms": 2300}
 }
 ```
+
+`history` を付けた場合、`timings` には検索クエリの書き換えにかかった `rewrite_ms` も入る。
 
 - `sources` はLLMに渡した根拠（Rerank関連度の降順）。`cited` は回答中で `[Sn]` として引用されたかどうか。
 - `abstained: true` は回答を控えたことを表す。関連度が `RAG_MIN_RERANK_SCORE` 以上の根拠が1件もない

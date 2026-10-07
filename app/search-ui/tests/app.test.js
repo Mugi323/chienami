@@ -9,6 +9,7 @@ const {
   upsertConversation,
   parseConversations,
   toAiMessage,
+  buildChatHistory,
   createConversationStore,
 } = require("../app.js");
 
@@ -214,4 +215,25 @@ test("conversation store falls back to memory when storage throws", () => {
   const memoryOnly = createConversationStore(null);
   memoryOnly.save(conv("b", 1));
   assert.equal(memoryOnly.load().length, 1);
+});
+
+test("buildChatHistory maps messages to roles and keeps the latest max", () => {
+  const messages = [
+    { role: "user", text: "PCRとは？" },
+    { role: "ai", answer: "DNAを増やす方法です[S1]。", sources: [] },
+    { role: "user", text: "温度は？" },
+    { role: "ai", answer: "58度です[S1]。", sources: [] },
+  ];
+  assert.deepEqual(buildChatHistory(messages, 3), [
+    { role: "assistant", content: "DNAを増やす方法です[S1]。" },
+    { role: "user", content: "温度は？" },
+    { role: "assistant", content: "58度です[S1]。" },
+  ]);
+  assert.equal(buildChatHistory(messages).length, 4);
+});
+
+test("buildChatHistory skips empty entries and handles missing messages", () => {
+  assert.deepEqual(buildChatHistory([{ role: "user", text: "" }, { role: "ai", answer: "" }]), []);
+  assert.deepEqual(buildChatHistory(undefined), []);
+  assert.deepEqual(buildChatHistory([{ role: "user", text: "q" }], 0), []);
 });
