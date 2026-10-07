@@ -83,7 +83,7 @@ test("parseConversations drops malformed entries and sorts", () => {
   );
 });
 
-test("toAiMessage keeps fields needed for display and truncates snippets", () => {
+test("toAiMessage keeps fields needed for display and drops snippets", () => {
   const message = toAiMessage({
     answer: "58度です[S1]。",
     abstained: false,
@@ -93,8 +93,7 @@ test("toAiMessage keeps fields needed for display and truncates snippets", () =>
     timings: { llm: 1000 },
   });
   assert.equal(message.role, "ai");
-  assert.equal(message.sources[0].snippet.length, 281);
-  assert.equal(message.sources[0].document_id, undefined);
+  assert.deepEqual(message.sources[0], { id: "S1", title: "PCR", url: "u", score: 0.9, cited: true });
   assert.deepEqual(message.timings, { llm: 1000 });
 });
 
