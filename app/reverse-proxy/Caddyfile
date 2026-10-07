@@ -7,6 +7,8 @@
 #                        プロキシする（同一オリジンのためCORS設定が不要）。
 # portal.lab.local      : Chienami ポータル（Outline/Search選択画面, Issue #40）。
 #                        静的ファイルのみをCaddyが直接配信する。
+# points.lab.local      : Chienami Points（貢献ポイントのランキング, Issue #77）。
+#                        search.lab.localと同様に静的ファイル + /api/* を chienami-api へ。
 #
 # OutlineのログインはAuthentikへブラウザリダイレクトするため、Authentik側も
 # LAN内の他端末から到達できるホスト名を割り当てる必要がある（127.0.0.1限定のままでは
@@ -47,4 +49,17 @@ portal.lab.local {
 	tls internal
 	root * /srv/portal
 	file_server
+}
+
+points.lab.local {
+	tls internal
+
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv/points-ui
+		file_server
+	}
 }

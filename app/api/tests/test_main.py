@@ -161,3 +161,48 @@ def test_search_still_works_when_ai_services_are_down(monkeypatch):
     monkeypatch.setattr(main.reranker_client, "rerank", _boom)
     monkeypatch.setattr(main.llm_client, "chat", _boom)
     assert client.get("/search", params={"q": "PCR"}).status_code == 200
+
+
+def test_points_returns_ranking(monkeypatch):
+    from chienami_api.points import UserPoints
+
+    monkeypatch.setattr(main.points_service, "_source", object())
+    monkeypatch.setattr(
+        main.points_service,
+        "ranking",
+        lambda: (1700000000.0, [UserPoints(1, "u1", "佐藤", 3, 1200, 42)]),
+    )
+    resp = client.get("/points")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["updated_at"] == 1700000000.0
+    assert body["rules"] == {
+        "points_per_document": main.POINTS_PER_DOCUMENT,
+        "characters_per_point": main.POINTS_CHARACTERS_PER_POINT,
+    }
+    assert body["users"] == [
+        {
+            "rank": 1,
+            "user_id": "u1",
+            "name": "佐藤",
+            "documents": 3,
+            "characters": 1200,
+            "points": 42,
+        }
+    ]
+
+
+def test_points_without_outline_token_returns_503(monkeypatch):
+    monkeypatch.setattr(main.points_service, "_source", None)
+    resp = client.get("/points")
+    assert resp.status_code == 503
+
+
+def test_points_outline_failure_returns_502(monkeypatch):
+    def _raise():
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(main.points_service, "_source", object())
+    monkeypatch.setattr(main.points_service, "ranking", _raise)
+    resp = client.get("/points")
+    assert resp.status_code == 502
