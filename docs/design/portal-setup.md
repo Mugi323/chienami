@@ -2,7 +2,7 @@
 
 `app/portal/` に追加した静的ページ（素のHTML/CSS、JSなし）を、Caddyが
 `portal.lab.local` として配信する。Outline（`knowledge.lab.local`）とChienami Search
-（`search.lab.local`、Issue #36）のどちらを開くか選ぶための入口ページ。
+（`portal.lab.local/search/`、Issue #36, #90）のどちらを開くか選ぶための入口ページ。
 
 Dockerコンテナの起動/停止操作は含まない（サーバは常時起動している前提。関連する
 検討は別Issue #20を参照）。
@@ -26,7 +26,7 @@ docker compose ps caddy
 1. `https://portal.lab.local/` を開く（証明書エラーが出る場合はルートCAの信頼登録を確認）。
 2. 「Outline」カードをクリックし、`https://knowledge.lab.local/` へ遷移することを確認する。
 3. `https://portal.lab.local/` に戻り、「Chienami Search」カードをクリックし、
-   `https://search.lab.local/` へ遷移することを確認する。
+   `https://portal.lab.local/search/` へ遷移することを確認する。
 
 ## 既知の制約
 
