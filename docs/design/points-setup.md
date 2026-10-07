@@ -2,7 +2,9 @@
 
 Outlineの文書充実に貢献したユーザへポイントを付与し、ランキングとして可視化する。
 `chienami-api` の `GET /points` がOutlineから集計し、静的ページ `app/points-ui/` を
-Caddyが `points.lab.local` として配信する（`/api/*` は `chienami-api` へプロキシ）。
+Caddyが `https://portal.lab.local/points/` として配信する（`/points/api/*` は `chienami-api` へプロキシ）。
+新しいホスト名を増やすと全端末のhosts追記が必要になるため、既存の `portal.lab.local` の下に
+パスで配置している（端末側の追加設定は不要）。
 
 景品交換ページは本Issueの対象外（ユーザ認証の方式を含めてIssue #88で扱う）。
 
@@ -26,21 +28,20 @@ Caddyが `points.lab.local` として配信する（`/api/*` は `chienami-api` 
 
 - `config/docker.env` に `OUTLINE_API_TOKEN` が設定済みであること（indexerと共用,
   [indexer-setup.md](indexer-setup.md)）。未設定の場合、`/points` のみ503を返し、検索・RAGは動作し続ける。
-- クライアント側の証明書信頼・hosts設定（`points.lab.local` 含む）は
-  [reverse-proxy-setup.md](reverse-proxy-setup.md) の手順に従うこと。
-  `app/scripts/setup-client.bat` は本Issueで `points.lab.local` のhosts追記にも対応済み。
+- 各端末で `portal.lab.local` を開けること（[reverse-proxy-setup.md](reverse-proxy-setup.md)）。
 
 ## 1. サーバ側の起動
 
 ```bash
 docker compose up -d --build api
+# 新しいフォルダ（points-ui）のマウントを反映するため、restartではなく作り直す
 docker compose up -d --force-recreate caddy
 docker compose exec api python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/points').read().decode())"
 ```
 
 ## 2. ブラウザでの確認
 
-1. `https://portal.lab.local/` を開き、「Chienami Points」カードから `https://points.lab.local/` へ遷移する。
+1. `https://portal.lab.local/` を開き、「Chienami Points」カードから `https://portal.lab.local/points/` へ遷移する。
 2. ポイントの付け方・ランキング（順位・名前・文書数・文字数・ポイント）が表示されることを確認する。
 3. Outlineで全員閲覧可Collectionに文書を公開し、キャッシュ時間経過後に再読み込みすると
    ポイントが増えることを確認する。

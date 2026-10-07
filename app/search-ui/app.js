@@ -768,7 +768,7 @@
     try {
       let response;
       try {
-        response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        response = await fetch(`api/search?q=${encodeURIComponent(query)}`);
       } catch (err) {
         throw new Error("検索APIに接続できませんでした。しばらくしてから再度お試しください。");
       }
@@ -795,7 +795,7 @@
   async function requestChat(question) {
     let response;
     try {
-      response = await fetch("/api/chat", {
+      response = await fetch("api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question }),

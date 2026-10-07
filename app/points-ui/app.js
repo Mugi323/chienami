@@ -1,7 +1,8 @@
 (() => {
   "use strict";
 
-  const API_URL = "/api/points";
+  // portal.lab.local/points/ 配下に置くため相対パスで呼ぶ（Caddyが /points/api/* をAPIへ転送）。
+  const API_URL = "api/points";
 
   function formatNumber(value) {
     return Number(value || 0).toLocaleString("ja-JP");
