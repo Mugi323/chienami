@@ -61,6 +61,7 @@ def test_system_prompt_states_design_principles():
     assert "断定しない" in SYSTEM_PROMPT
     assert NO_ANSWER_TEXT in SYSTEM_PROMPT
     assert "[S1]" in SYSTEM_PROMPT
+    assert "```" in SYSTEM_PROMPT
 
 
 def test_extract_citations_ordered_unique_and_in_range():

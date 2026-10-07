@@ -30,6 +30,14 @@
   --shadow-card: 0 1px 3px rgba(61, 46, 30, 0.06);
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans JP", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* AI回答のコードブロック（濃い背景で本文と区別する） */
+  --color-code-bg: #2f2a25;
+  --color-code-header-bg: #3d362f;
+  --color-code-text: #f3ebe1;
+  --color-code-muted: #c9b9a6;
+  --color-inline-code-bg: rgba(61, 46, 30, 0.08);
 }
 
 * {
@@ -425,6 +433,110 @@ button {
   color: var(--color-text);
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+/* --- AI回答のMarkdown表示（Issue #79） --- */
+.msg-ai-text.md > :first-child {
+  margin-top: 0;
+}
+
+.msg-ai-text.md > :last-child {
+  margin-bottom: 0;
+}
+
+.md-paragraph {
+  margin: 0 0 0.75rem;
+}
+
+.md-heading {
+  margin: 1.1rem 0 0.5rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}
+
+h3.md-heading {
+  font-size: 1.05rem;
+}
+
+h4.md-heading {
+  font-size: 0.98rem;
+}
+
+h5.md-heading {
+  font-size: 0.92rem;
+}
+
+.md-list {
+  margin: 0 0 0.75rem;
+  padding-left: 1.5rem;
+}
+
+.md-list li + li {
+  margin-top: 0.25rem;
+}
+
+.md-hr {
+  margin: 1rem 0;
+  border: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.md-inline-code {
+  padding: 0.1em 0.4em;
+  border-radius: 4px;
+  background: var(--color-inline-code-bg);
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.md-code-block {
+  margin: 0 0 0.75rem;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--color-code-bg);
+}
+
+.md-code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem 0.3rem 0.875rem;
+  background: var(--color-code-header-bg);
+  color: var(--color-code-muted);
+  font-size: 0.75rem;
+}
+
+.md-code-lang {
+  font-family: var(--font-mono);
+}
+
+.md-code-copy {
+  padding: 0.2rem 0.5rem;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-code-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.md-code-copy:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-code-text);
+}
+
+.md-code {
+  margin: 0;
+  padding: 0.75rem 0.875rem;
+  overflow-x: auto;
+  color: var(--color-code-text);
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  line-height: 1.6;
+  white-space: pre;
+  overflow-wrap: normal;
+  tab-size: 4;
 }
 
 .msg-error .msg-ai-text {
