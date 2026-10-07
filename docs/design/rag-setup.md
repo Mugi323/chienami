@@ -50,7 +50,7 @@ docker compose run --rm --no-deps --entrypoint sh outline -c \
    --post-data='{\"question\":\"PCRのアニーリング温度は？\"}' http://api:8000/chat"
 ```
 
-ブラウザからは、Reverse Proxy経由で `https://search.lab.local/api/chat` に届く。
+ブラウザからは、Reverse Proxy経由で `https://portal.lab.local/search/api/chat` に届く。
 
 ## GPU機での確認（未実施）
 

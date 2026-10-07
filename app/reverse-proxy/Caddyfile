@@ -2,15 +2,13 @@
 #
 # knowledge.lab.local : Outline本体（研究者が直接触るアプリ）
 # auth.lab.local       : Authentik（OIDCログイン画面・招待リンク経由の登録画面）
-# search.lab.local     : Chienami Search（セマンティック検索UI, Issue #36）。
-#                        静的ファイルはCaddyが直接配信し、/api/* のみ chienami-api へ
-#                        プロキシする（同一オリジンのためCORS設定が不要）。
 # portal.lab.local      : Chienami ポータル（Outline/Search選択画面, Issue #40）。
-#                        静的ファイルのみをCaddyが直接配信する。
-#                        /points/ 配下はChienami Points（貢献ポイントのランキング,
-#                        Issue #77）。新しいホスト名を増やすと全端末のhosts追記が必要に
-#                        なるため、既存のportal.lab.localの下にパスで配置する。
-#                        /points/api/* のみ chienami-api へプロキシする。
+#                        配下のアプリはホスト名を分けずパスで配置する（ホスト名を増やすと
+#                        全端末のhosts追記が必要になるため）。いずれも静的ファイルはCaddyが
+#                        直接配信し、<パス>/api/* のみ chienami-api へプロキシする
+#                        （同一オリジンのためCORS設定が不要）。
+#                          /search/ : Chienami Search（セマンティック検索UI, Issue #36, #90）
+#                          /points/ : Chienami Points（貢献ポイントのランキング, Issue #77）
 #
 # OutlineのログインはAuthentikへブラウザリダイレクトするため、Authentik側も
 # LAN内の他端末から到達できるホスト名を割り当てる必要がある（127.0.0.1限定のままでは
@@ -34,23 +32,20 @@ auth.lab.local {
 	reverse_proxy authentik-server:9000
 }
 
-search.lab.local {
-	tls internal
-
-	handle_path /api/* {
-		reverse_proxy api:8000
-	}
-
-	handle {
-		root * /srv/search-ui
-		file_server
-	}
-}
-
 portal.lab.local {
 	tls internal
 
+	redir /search /search/
 	redir /points /points/
+
+	handle_path /search/api/* {
+		reverse_proxy api:8000
+	}
+
+	handle_path /search/* {
+		root * /srv/search-ui
+		file_server
+	}
 
 	handle_path /points/api/* {
 		reverse_proxy api:8000
