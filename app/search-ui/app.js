@@ -27,6 +27,113 @@
     return parts;
   }
 
+  // 回答本文（LLMが書くMarkdown）をブロックの配列に分ける。対応するのはLLMがよく使う記法だけ:
+  // コードブロック（```/~~~）、見出し、箇条書き・番号付きリスト、区切り線、段落。
+  // HTMLへは変換せず、描画側でDOMノードとして組み立てる（HTMLを解釈しないため安全）。
+  function parseMarkdown(answer) {
+    const lines = String(answer || "").replace(/\r\n?/g, "\n").split("\n");
+    const blocks = [];
+    let paragraph = null;
+    let list = null;
+
+    function closeOpenBlocks() {
+      paragraph = null;
+      list = null;
+    }
+
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i];
+
+      const fence = line.match(/^(\s*)(`{3,}|~{3,})\s*([^\s`]*)/);
+      if (fence) {
+        closeOpenBlocks();
+        const [, indent, marker, lang] = fence;
+        const code = [];
+        let after = "";
+        for (i += 1; i < lines.length; i += 1) {
+          // 閉じフェンスの後ろに出典（```[S1] など）が続く書き方も許す。
+          const close = lines[i].match(/^\s*(`{3,}|~{3,})\s*((?:\[S\d+\]\s*)*)$/);
+          if (close && close[1][0] === marker[0] && close[1].length >= marker.length) {
+            after = close[2].trim();
+            break;
+          }
+          code.push(lines[i].startsWith(indent) ? lines[i].slice(indent.length) : lines[i].trimStart());
+        }
+        blocks.push({ type: "code", lang, text: code.join("\n") });
+        if (after) blocks.push({ type: "paragraph", text: after });
+        continue;
+      }
+
+      if (!line.trim()) {
+        closeOpenBlocks();
+        continue;
+      }
+
+      const heading = line.match(/^\s{0,3}(#{1,6})\s+(.*?)(?:\s+#+)?\s*$/);
+      if (heading) {
+        closeOpenBlocks();
+        blocks.push({ type: "heading", level: heading[1].length, text: heading[2] });
+        continue;
+      }
+
+      if (/^\s{0,3}([-*_])(\s*\1){2,}\s*$/.test(line)) {
+        closeOpenBlocks();
+        blocks.push({ type: "hr" });
+        continue;
+      }
+
+      // 入れ子のリストは平坦にする（字下げは無視）。
+      const item = line.match(/^\s*(?:([-*+])|(\d+)[.)])\s+(.*)$/);
+      if (item) {
+        const ordered = item[2] !== undefined;
+        if (!list || list.ordered !== ordered) {
+          paragraph = null;
+          list = { type: "list", ordered, start: ordered ? Number(item[2]) : 1, items: [] };
+          blocks.push(list);
+        }
+        list.items.push(item[3]);
+        continue;
+      }
+
+      if (list) {
+        // リスト項目の折り返し行。
+        list.items[list.items.length - 1] += `\n${line.trim()}`;
+        continue;
+      }
+      if (paragraph) {
+        paragraph.text += `\n${line}`;
+      } else {
+        paragraph = { type: "paragraph", text: line };
+        blocks.push(paragraph);
+      }
+    }
+    return blocks;
+  }
+
+  // ブロック内の文字列を、テキスト・インラインコード・太字・出典参照に分ける。
+  // インラインコードの中は記号も [S1] もそのまま表示する。太字の中では出典参照だけを解釈する。
+  function parseInline(text, sourceIds) {
+    const parts = [];
+    const pattern = /(`+)([\s\S]+?)\1(?!`)|\*\*(?=\S)([\s\S]+?)\*\*/g;
+    let last = 0;
+    let match;
+    while ((match = pattern.exec(text)) !== null) {
+      if (match.index > last) {
+        parts.push(...splitCitations(text.slice(last, match.index), sourceIds));
+      }
+      if (match[1]) {
+        parts.push({ type: "code", value: match[2].trim() || match[2] });
+      } else {
+        parts.push({ type: "strong", children: splitCitations(match[3], sourceIds) });
+      }
+      last = pattern.lastIndex;
+    }
+    if (last < text.length) {
+      parts.push(...splitCitations(text.slice(last), sourceIds));
+    }
+    return parts;
+  }
+
   function truncate(text, maxLength) {
     const chars = Array.from(text);
     if (chars.length <= maxLength) return text;
@@ -132,6 +239,8 @@
   if (typeof module === "object" && module.exports) {
     module.exports = {
       splitCitations,
+      parseMarkdown,
+      parseInline,
       deriveTitle,
       upsertConversation,
       parseConversations,
@@ -284,27 +393,125 @@
     return `src-${messageIndex}-${sourceId}`;
   }
 
+  function renderCite(sourceId, messageIndex) {
+    const cardId = sourceCardId(messageIndex, sourceId);
+    const cite = el("a", "cite", sourceId);
+    cite.href = `#${cardId}`;
+    cite.addEventListener("click", (event) => {
+      event.preventDefault();
+      const card = document.getElementById(cardId);
+      if (card) highlightCard(card);
+    });
+    return cite;
+  }
+
+  function appendInline(parent, text, sourceIds, messageIndex) {
+    for (const part of parseInline(text, sourceIds)) {
+      if (part.type === "text") {
+        parent.appendChild(document.createTextNode(part.value));
+      } else if (part.type === "cite") {
+        parent.appendChild(renderCite(part.value, messageIndex));
+      } else if (part.type === "code") {
+        parent.appendChild(el("code", "md-inline-code", part.value));
+      } else {
+        const strong = el("strong");
+        for (const child of part.children) {
+          strong.appendChild(
+            child.type === "cite"
+              ? renderCite(child.value, messageIndex)
+              : document.createTextNode(child.value)
+          );
+        }
+        parent.appendChild(strong);
+      }
+    }
+  }
+
+  // http（非セキュアコンテキスト）などでClipboard APIが使えない場合は、execCommandで代替する。
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const area = el("textarea");
+    area.value = text;
+    area.setAttribute("readonly", "");
+    area.style.position = "fixed";
+    area.style.opacity = "0";
+    document.body.appendChild(area);
+    area.select();
+    const ok = document.execCommand("copy");
+    area.remove();
+    if (!ok) throw new Error("copy failed");
+  }
+
+  function renderCodeBlock(block) {
+    const wrap = el("div", "md-code-block");
+    const header = el("div", "md-code-header");
+    header.appendChild(el("span", "md-code-lang", block.lang || "code"));
+
+    const copyBtn = el("button", "md-code-copy", "コピー");
+    copyBtn.type = "button";
+    copyBtn.setAttribute("aria-label", "コードをコピー");
+    let resetTimer = null;
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await copyText(block.text);
+        copyBtn.textContent = "コピーしました";
+      } catch (err) {
+        copyBtn.textContent = "コピーできませんでした";
+      }
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        copyBtn.textContent = "コピー";
+      }, 1600);
+    });
+    header.appendChild(copyBtn);
+
+    const pre = el("pre", "md-code");
+    pre.appendChild(el("code", null, block.text));
+    wrap.appendChild(header);
+    wrap.appendChild(pre);
+    return wrap;
+  }
+
+  // 回答中の見出しは、画面全体の見出しより目立たないようh3以下に寄せる。
+  const HEADING_TAGS = ["h3", "h4", "h5", "h5", "h5", "h5"];
+
+  function renderAnswer(answer, sourceIds, messageIndex) {
+    const text = el("div", "msg-ai-text md");
+    for (const block of parseMarkdown(answer)) {
+      if (block.type === "code") {
+        text.appendChild(renderCodeBlock(block));
+      } else if (block.type === "hr") {
+        text.appendChild(el("hr", "md-hr"));
+      } else if (block.type === "heading") {
+        const heading = el(HEADING_TAGS[block.level - 1], "md-heading");
+        appendInline(heading, block.text, sourceIds, messageIndex);
+        text.appendChild(heading);
+      } else if (block.type === "list") {
+        const list = el(block.ordered ? "ol" : "ul", "md-list");
+        if (block.ordered && block.start !== 1) list.start = block.start;
+        for (const item of block.items) {
+          const li = el("li");
+          appendInline(li, item, sourceIds, messageIndex);
+          list.appendChild(li);
+        }
+        text.appendChild(list);
+      } else {
+        const p = el("p", "md-paragraph");
+        appendInline(p, block.text, sourceIds, messageIndex);
+        text.appendChild(p);
+      }
+    }
+    return text;
+  }
+
   function renderAiMessage(message, messageIndex, question, animate) {
     const { wrap, body } = aiShell(animate);
     const sources = message.sources || [];
 
-    const text = el("div", "msg-ai-text");
-    for (const part of splitCitations(message.answer, sources.map((s) => s.id))) {
-      if (part.type === "text") {
-        text.appendChild(document.createTextNode(part.value));
-      } else {
-        const cardId = sourceCardId(messageIndex, part.value);
-        const cite = el("a", "cite", part.value);
-        cite.href = `#${cardId}`;
-        cite.addEventListener("click", (event) => {
-          event.preventDefault();
-          const card = document.getElementById(cardId);
-          if (card) highlightCard(card);
-        });
-        text.appendChild(cite);
-      }
-    }
-    body.appendChild(text);
+    body.appendChild(renderAnswer(message.answer, sources.map((s) => s.id), messageIndex));
 
     if (message.abstained && question) {
       const fallback = el("button", "answer-fallback", "通常の検索で探す →");
