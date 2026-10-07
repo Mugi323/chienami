@@ -543,17 +543,57 @@ button {
   border-radius: 12px;
   padding: 0.75rem 0.875rem;
   box-shadow: var(--shadow-card);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
-.source-card.uncited {
+.source-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.source-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  font-size: 0.85rem;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.source-item + .source-item {
+  border-top: 1px solid var(--color-border);
+}
+
+.source-item.uncited {
   opacity: 0.6;
 }
 
-.source-card.highlight {
+.source-item.highlight {
   opacity: 1;
-  border-color: var(--color-main);
-  box-shadow: var(--shadow-input-focus);
+  background: var(--color-main-soft);
+}
+
+.source-item .source-badge {
+  flex-shrink: 0;
+  margin-right: 0;
+}
+
+.source-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.source-title:hover {
+  text-decoration: underline;
 }
 
 .result-header {

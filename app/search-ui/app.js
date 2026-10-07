@@ -70,7 +70,7 @@
   }
 
   // /chatのレスポンスを、履歴に保存するAIメッセージの形にする。
-  // 出典の本文は表示に必要な長さまでに切り詰め、localStorageの容量を節約する。
+  // 出典は簡易表示で本文を使わないため、localStorageの容量節約のため本文（snippet）は保存しない。
   function toAiMessage(body) {
     return {
       role: "ai",
@@ -80,7 +80,6 @@
         id: s.id,
         title: s.title,
         url: s.url,
-        snippet: truncate(s.snippet || "", SNIPPET_MAX_LENGTH),
         score: s.score,
         cited: Boolean(s.cited),
       })),
@@ -322,39 +321,52 @@
 
     if (sources.length > 0) {
       body.appendChild(el("div", "section-label", "出典"));
-      const list = el("ul", "results");
+      const list = el("ul", "source-list");
       for (const source of sources) {
-        list.appendChild(createResultCard(source, source, sourceCardId(messageIndex, source.id)));
+        list.appendChild(createSourceItem(source, sourceCardId(messageIndex, source.id)));
       }
       body.appendChild(list);
     }
     return wrap;
   }
 
-  // 検索結果・出典で共通のカード。sourceを渡すと出典用の表示（S番号・引用有無）になる。
-  function createResultCard(result, source, cardId) {
+  // 出典は1件1行（S番号・タイトル・関連度）で簡易表示する。内容はタイトルからOutlineを開いて読む。
+  function createSourceItem(source, cardId) {
+    const li = el("li", "source-item");
+    li.id = cardId;
+    li.classList.toggle("uncited", !source.cited);
+
+    li.appendChild(el("span", "source-badge", source.id));
+
+    const title = el("a", "source-title", source.title || "(無題)");
+    title.href = source.url;
+    title.target = "_blank";
+    title.rel = "noopener noreferrer";
+    title.title = source.title || "";
+    li.appendChild(title);
+
+    li.appendChild(
+      el(
+        "span",
+        "result-score",
+        `関連度 ${Number(source.score).toFixed(2)}${source.cited ? "" : "・未引用"}`
+      )
+    );
+    return li;
+  }
+
+  function createResultCard(result) {
     const li = el("li", "source-card");
     const header = el("div", "result-header");
 
     const title = el("h4", "result-title");
-    if (source) {
-      li.id = cardId;
-      li.classList.toggle("uncited", !source.cited);
-      title.appendChild(el("span", "source-badge", source.id));
-    }
     const titleLink = el("a", null, result.title || "(無題)");
     titleLink.href = result.url;
     titleLink.target = "_blank";
     titleLink.rel = "noopener noreferrer";
     title.appendChild(titleLink);
 
-    const score = el(
-      "span",
-      "result-score",
-      source
-        ? `関連度 ${Number(result.score).toFixed(2)}${source.cited ? "" : "・回答で未引用"}`
-        : `score ${Number(result.score).toFixed(3)}`
-    );
+    const score = el("span", "result-score", `score ${Number(result.score).toFixed(3)}`);
 
     header.appendChild(title);
     header.appendChild(score);
