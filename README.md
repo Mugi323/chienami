@@ -132,5 +132,6 @@ Issue作成 → ブランチ作成 → 実装 → Push → Pull Request → CI �
 - [システム設計書 v1.4](docs/system_design_v1.4.md) — アーキテクチャ、コンポーネント設計、セキュリティ、バックアップ・復旧、導入ロードマップなどの詳細
 - [起動・停止スクリプトの使い方](docs/design/scripts-usage.md) — `app/scripts/` の `setup.sh` / `start.sh` / `stop.sh` の使い方
 - [GPU非搭載の開発機での起動](docs/design/cpu-dev-setup.md) — `CHIENAMI_CPU=1` でCPU用overrideを重ねて起動する方法
+- [文書データの保存先の指定](docs/design/data-dir-setup.md) — `CHIENAMI_DATA_DIR` で正本データを `/srv/chienami/data` 等へ保存する方法
 - [Reranker基盤の動作確認](docs/design/reranker-setup.md) — llama.cpp + Qwen3-Reranker-0.6B（Phase 4）
 - [RAG（/chat）の動作確認](docs/design/rag-setup.md) — 出典付き回答の仕組み・設定・GPU機での確認項目（Phase 4）

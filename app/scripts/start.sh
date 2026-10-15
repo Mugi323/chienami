@@ -23,6 +23,7 @@ bash "$SCRIPT_DIR/setup.sh" --no-up
 require_compose
 
 log_info "起動しています: outline / postgres / redis / authentik-postgres / authentik-server / authentik-worker / qdrant / embedding / llm / reranker / indexer / api / caddy"
+prepare_data_dir
 compose up -d
 compose ps
 check_hosts_entries

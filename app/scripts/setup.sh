@@ -125,6 +125,7 @@ main() {
 
   if $run_up; then
     require_compose
+    prepare_data_dir
     log_info "docker compose up -d を実行します"
     compose up -d
     log_info "起動完了。docker compose ps で状態を確認してください"

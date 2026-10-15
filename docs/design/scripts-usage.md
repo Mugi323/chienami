@@ -70,6 +70,14 @@ CI等の非対話環境から実行する場合は `--yes` を明示的に付け
 `docker compose` を実行する（例: `CHIENAMI_CPU=1 ./app/scripts/start.sh`）。詳細は
 [cpu-dev-setup.md](cpu-dev-setup.md) を参照。
 
+## 5. 正本データの保存先を指定する: `CHIENAMI_DATA_DIR`
+
+`app/config/docker.env` に `CHIENAMI_DATA_DIR`（絶対パス）を書くと、override `app/compose.data.yaml` を重ね、
+Outline・Authentikの正本データ（DB・添付ファイル）をnamed volumeではなくそのディレクトリ配下に保存する
+（例: `CHIENAMI_DATA_DIR=/srv/chienami/data`）。同名の環境変数が設定されていればそちらを優先する。`start.sh` は起動前にディレクトリの
+作成と所有者の設定も行う。`stop.sh --reset-data` はこのディレクトリを削除しない。詳細は
+[data-dir-setup.md](data-dir-setup.md) を参照。
+
 ## 既知の制約
 
 - OIDC値の設定と `/etc/hosts` の編集は引き続き手動（前者はAuthentik管理UI操作、後者はsudo権限が
