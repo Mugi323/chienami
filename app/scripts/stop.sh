@@ -15,6 +15,7 @@ usage() {
                 authentik-data, caddy-data, qdrant-data, embedding-model-cache,
                 llm-model-cache, reranker-model-cache）を完全に削除して停止する。元に戻せません。
                 対話端末では確認のため "delete" の入力を要求します。
+                CHIENAMI_DATA_DIR を設定している場合、その配下のデータは削除しません（手動で削除する）。
   --yes         --reset-data と併用し、非対話環境でも確認をスキップして実行する。
   -h, --help    このヘルプを表示する
 EOF
@@ -48,6 +49,9 @@ if $reset_data; then
   log_info "docker compose down -v を実行します"
   compose down -v
   log_info "停止・データ削除が完了しました"
+  if [[ -n "${CHIENAMI_DATA_DIR:-}" ]]; then
+    log_warn "CHIENAMI_DATA_DIR 配下の正本データは削除していません。初期化する場合は手動で削除してください: $CHIENAMI_DATA_DIR"
+  fi
 else
   log_info "docker compose down を実行します（named volumeは保持されます）"
   compose down

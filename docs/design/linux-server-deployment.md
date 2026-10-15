@@ -9,7 +9,8 @@ Chienamiを導入し、同一LAN内のWindows PCから `https://knowledge.lab.lo
 **本手順書のスコープ**: 動作確認できる状態までの導入に限定する。以下は対象外。
 
 - バックアップ・復元（Issue #16、保留中）
-- `/srv/chienami` への本番向けディレクトリ構成の正式運用（`docs/system_design_v1.4.md` 4.2節）
+- `/srv/chienami` への本番向けディレクトリ構成の正式運用（`docs/system_design_v1.4.md` 4.2節）。
+  ただし正本データの保存先の指定（4節）は本手順に含める
 - 開発環境（WSL2）から本番環境へのデータ移行
 
 ## 0. 前提
@@ -87,6 +88,21 @@ cd chienami/app
 
 `app/scripts/start.sh` を実行すると、`config/docker.env` / `config/authentik.env` が
 無ければ自動生成した上で全コンテナが起動する（詳細: [scripts-usage.md](scripts-usage.md)）。
+
+正本データ（Outline・AuthentikのDBと添付ファイル）は `/srv/chienami/data` に保存する
+（[data-dir-setup.md](data-dir-setup.md)）。起動前に保存先を用意し、`config/docker.env` を生成する。
+
+```bash
+sudo mkdir -p /srv/chienami/data
+sudo chown "$USER" /srv/chienami/data
+./scripts/setup.sh --no-up
+```
+
+生成された `config/docker.env` の `CHIENAMI_DATA_DIR=` の行に保存先を書く。
+
+```bash
+CHIENAMI_DATA_DIR=/srv/chienami/data
+```
 
 ```bash
 ./scripts/start.sh
@@ -217,6 +233,7 @@ macOS/Linuxクライアントの場合は、[reverse-proxy-setup.md](reverse-pro
 ## 10. 動作確認チェックリスト
 
 - [ ] `docker compose ps` で全サービスが起動していること
+- [ ] `/srv/chienami/data/outline/postgres` 等にデータが作られていること（4節）
 - [ ] サーバ再起動後もコンテナが自動復帰すること（7節）
 - [ ] LAN内のWindows PCから `https://knowledge.lab.local/` に証明書エラーなくアクセスでき、
       Outlineのログイン画面が表示されること
@@ -229,8 +246,9 @@ macOS/Linuxクライアントの場合は、[reverse-proxy-setup.md](reverse-pro
 ## 11. 既知の制約・今後の課題
 
 - バックアップ・復元は未整備（Issue #16、保留中）。本手順のみでは障害時にデータを失う。
-- `/srv/chienami` 配置等の本番向けディレクトリ構成は未適用。現状はリポジトリ直下・Docker
-  named volumeで運用している。
+- `/srv/chienami` 配置等の本番向けディレクトリ構成は正本データ（`/srv/chienami/data`、4節）のみ
+  適用済み。リポジトリはclone先に置き、検索索引・モデルキャッシュ・証明書はDocker named volumeで
+  運用している。
 - サーバのLAN内IPが変わった場合、Windows PC側のhosts設定・ルートCA信頼は影響を受けない
   （hosts側のIP更新のみで足りる）が、`caddy-data` named volumeを削除した場合はルートCAが
   再生成されるため、8〜9節の手順をやり直す必要がある。
