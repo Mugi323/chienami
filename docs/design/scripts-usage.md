@@ -80,6 +80,25 @@ Outline・Authentikの正本データ（DB・添付ファイル）をnamed volum
 作成と所有者の設定も行う。`stop.sh --reset-data` はこのディレクトリを削除しない。詳細は
 [data-dir-setup.md](data-dir-setup.md) を参照。
 
+## 6. バックアップ: `backup.sh`（暫定）
+
+`app/config/docker.env` の `CHIENAMI_BACKUP_DIR`（絶対パス）配下に、`YYYY-MM-DD_HHMMSS/` のスナップショットを作り
+`latest` を最新へ向ける。中身は Outline・Authentik の `pg_dump -Fc`、Outline の添付ファイル、Authentik のデータ、
+`config/*.env`（シークレットを含むが、運用方針として誰でも読める権限で保存）。前回から変わらないファイルは `rsync --link-dest` の
+ハードリンクで共有するため、増える容量は差分だけ。`CHIENAMI_BACKUP_KEEP`（既定7）より古いものは削除する。
+Qdrant・モデルキャッシュ・Caddyの証明書は再生成できるため対象外。
+
+現在は cron で毎日 3:30 に実行している（ログは `logs/backup.log`）:
+
+```
+30 3 * * * /home/user/web_app/chienami/app/scripts/backup.sh >> /home/user/web_app/chienami/logs/backup.log 2>&1
+```
+
+保存先を移すときは `CHIENAMI_BACKUP_DIR` の行だけ書き換える。過去分も引き継ぐ場合は、旧保存先を
+`rsync -aH 旧/ 新/` でコピーする（`-H` でハードリンクを保ったまま移せる）。
+
+復元例: `docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean' < latest/outline-postgres.dump`
+
 ## 既知の制約
 
 - OIDC値の設定と `/etc/hosts` の編集は引き続き手動（前者はAuthentik管理UI操作、後者はsudo権限が
