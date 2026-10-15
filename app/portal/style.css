@@ -166,23 +166,6 @@ body {
   transform: translateX(3px);
 }
 
-/* 管理者向けの導線。一般メンバーが迷わないよう控えめに置く。 */
-.admin-links {
-  margin-top: 2rem;
-  text-align: center;
-  font-size: 0.8rem;
-}
-
-.admin-links a {
-  color: var(--color-text-mid);
-  text-decoration: none;
-}
-
-.admin-links a:hover {
-  color: var(--color-main-dark);
-  text-decoration: underline;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .card,
   .card-arrow {

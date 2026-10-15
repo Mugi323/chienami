@@ -69,7 +69,7 @@ print(BlueprintInstance.objects.get(path='custom/invite-admin.yaml').status)"
 
 ## 3. 動作確認
 
-1. `https://portal.lab.local/` 下部の「招待リンクの発行」を開く。
+1. `https://portal.lab.local/` の「Invite」カードを開く。
    未ログインならAuthentikのログイン画面が出るので、ログインすると発行ページに戻る。
 2. 有効期間と登録できる人数を選んで「発行する」を押し、一覧に追加されたリンクを「コピー」する。
 3. 別のブラウザ（シークレットウィンドウ）でリンクを開き、氏名・パスワードで登録できることを確認する。
