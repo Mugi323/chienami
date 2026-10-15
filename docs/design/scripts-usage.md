@@ -23,6 +23,8 @@ Issue #24で追加した `app/scripts/` 配下のスクリプトにより、`app
   - OutlineのDBパスワードとAuthentikのDBパスワードは別々の値を生成する。
   - `docker.env` の `POSTGRES_PASSWORD` と `DATABASE_URL` 内のパスワードは同じ値になる。
   - `authentik.env` の `POSTGRES_PASSWORD` と `AUTHENTIK_POSTGRESQL__PASSWORD` は同じ値になる。
+  - 招待リンク発行用の `CHIENAMI_INVITE_API_TOKEN` は `docker.env` と `authentik.env` で同じ値になる
+    （片方のファイルが既にあれば、その値を引き継ぐ。[invite-setup.md](invite-setup.md)）。
 - **既にファイルが存在する場合は一切変更しない。** 何度実行しても安全（再実行してよい）。
 - `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` は空のまま残る。Authentik管理画面でOutline用の
   Provider/Applicationを作成した後、手動で設定する（[authentik-setup.md](authentik-setup.md) 参照）。

@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Invite</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="main">
+    <header class="hero">
+      <a class="back-link" href="/">← ポータルへ戻る</a>
+      <h1 class="title">招待リンクの発行</h1>
+      <p class="tagline">新しい研究室メンバーに渡す登録用リンクを作る（管理者専用）</p>
+    </header>
+
+    <section class="panel" aria-labelledby="create-title">
+      <h2 id="create-title" class="section-title">新しく発行する</h2>
+      <form id="create-form" class="create-form">
+        <label class="field">
+          <span class="field-label">有効期間</span>
+          <select id="valid-days" name="valid_days">
+            <option value="1">1日</option>
+            <option value="7" selected>7日</option>
+            <option value="30">30日</option>
+            <option value="90">90日</option>
+          </select>
+        </label>
+        <fieldset class="field">
+          <legend class="field-label">登録できる人数</legend>
+          <label class="choice">
+            <input type="radio" name="single_use" value="true" checked />
+            1人だけ（登録されたらリンクは無効になる）
+          </label>
+          <label class="choice">
+            <input type="radio" name="single_use" value="false" />
+            期限内なら何人でも（新入生にまとめて配る場合など）
+          </label>
+        </fieldset>
+        <button id="create-button" class="button" type="submit">発行する</button>
+      </form>
+      <p id="create-status" class="form-status" role="status"></p>
+    </section>
+
+    <section aria-labelledby="list-title">
+      <h2 id="list-title" class="section-title">有効な招待リンク</h2>
+      <p id="status" class="status" role="status">読み込み中…</p>
+      <ul id="invitations" class="invitations" hidden></ul>
+      <p class="note">
+        リンクは対面や研究室のチャットで本人に渡してください。開くと氏名とパスワードを登録できます。
+        各端末では事前に証明書の信頼登録と hosts の設定（setup-client.bat）が必要です。
+      </p>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -38,6 +38,22 @@ cleanup_on_failure() {
 }
 trap cleanup_on_failure EXIT
 
+# 招待リンク発行用トークン（Issue #81）は docker.env（chienami-api）と authentik.env（Blueprint）で
+# 同じ値にする必要がある。片方のファイルが既にあればその値を使い、無ければ1回だけ生成する。
+invite_api_token=""
+get_invite_api_token() {
+  if [[ -z "$invite_api_token" ]]; then
+    local f
+    for f in "$CONFIG_DIR/docker.env" "$CONFIG_DIR/authentik.env"; do
+      [[ -f "$f" && "$f" != "$docker_env_partial" && "$f" != "$authentik_env_partial" ]] || continue
+      invite_api_token="$(sed -n 's/^CHIENAMI_INVITE_API_TOKEN=//p' "$f" | tail -n 1)"
+      [[ -n "$invite_api_token" ]] && break
+    done
+    [[ -n "$invite_api_token" ]] || invite_api_token="$(openssl rand -hex 32)"
+  fi
+  printf '%s' "$invite_api_token"
+}
+
 bootstrap_docker_env() {
   local target="$CONFIG_DIR/docker.env" example="$CONFIG_DIR/docker.env.example"
   if [[ -f "$target" ]]; then
@@ -66,6 +82,7 @@ bootstrap_docker_env() {
   inject_kv "$target" QDRANT__SERVICE__API_KEY "$qdrant_api_key"
   inject_kv "$target" QDRANT_API_KEY "$qdrant_api_key"
   inject_kv "$target" LLAMA_API_KEY "$llama_api_key"
+  inject_kv "$target" CHIENAMI_INVITE_API_TOKEN "$(get_invite_api_token)"
 
   docker_env_partial=""
   log_info "作成しました: $target"
@@ -90,6 +107,7 @@ bootstrap_authentik_env() {
   inject_kv "$target" POSTGRES_PASSWORD "$authentik_db_pw"
   inject_kv "$target" AUTHENTIK_POSTGRESQL__PASSWORD "$authentik_db_pw"
   inject_kv "$target" AUTHENTIK_SECRET_KEY "$authentik_secret_key"
+  inject_kv "$target" CHIENAMI_INVITE_API_TOKEN "$(get_invite_api_token)"
 
   authentik_env_partial=""
   log_info "作成しました: $target"

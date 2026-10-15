@@ -1,0 +1,113 @@
+# 管理者向け招待リンク発行ページ（Issue #81）。
+#
+# https://portal.lab.local/invite/ を「authentik Admins」グループのメンバーだけが開けるようにし、
+# chienami-api が招待（Invitation）を発行・一覧・削除するための権限を用意する。
+#
+# - ページの保護: Proxy Provider（forward_single）+ 組み込みOutpost。Caddyが /invite/* への
+#   アクセスごとに forward_auth でAuthentikへ問い合わせ、未ログインならauth.lab.localの
+#   ログイン画面へ、管理者以外なら拒否画面へ回す（app/reverse-proxy/Caddyfile）。
+# - APIの権限: サービスアカウント chienami-invite に、招待の作成・閲覧・削除とFlowの閲覧
+#   だけを許すRoleを付与する（管理者トークンを chienami-api に持たせない）。
+#   トークンの値は config/authentik.env と config/docker.env の CHIENAMI_INVITE_API_TOKEN
+#   （同じ値、setup.shが自動生成）。未設定ならトークンだけ作らず、API側は503を返す。
+#
+# 注意: 組み込みOutpostの providers は本Blueprintの内容で上書きされる。管理画面から
+# 組み込みOutpostへ別のProviderを追加している場合は、このファイルにも追記すること。
+version: 1
+metadata:
+  name: 招待リンク発行ページ（管理者限定）
+context:
+  token: !Env [CHIENAMI_INVITE_API_TOKEN, null]
+entries:
+  # 初回起動時は既定Flow・管理者グループより先に本Blueprintが適用されることがあるため、
+  # 参照するものを作るBlueprintを先に適用させる。
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        path: system/bootstrap.yaml
+      required: false
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        path: default/flow-default-provider-authorization-implicit-consent.yaml
+      required: false
+  - model: authentik_blueprints.metaapplyblueprint
+    attrs:
+      identifiers:
+        path: default/flow-default-provider-invalidation.yaml
+      required: false
+
+  # --- chienami-api 用のサービスアカウントとトークン ---
+  - model: authentik_rbac.role
+    id: invite-role
+    identifiers:
+      name: chienami-invite-manager
+    attrs:
+      permissions:
+        - authentik_stages_invitation.add_invitation
+        - authentik_stages_invitation.view_invitation
+        - authentik_stages_invitation.delete_invitation
+        # 招待に紐付けるFlow（研究室メンバー登録）をslugから引くために使う。
+        - authentik_flows.view_flow
+
+  - model: authentik_core.user
+    id: invite-user
+    identifiers:
+      username: chienami-invite
+    attrs:
+      name: Chienami 招待リンク発行
+      type: service_account
+      path: goauthentik.io/service-accounts
+      roles:
+        - !KeyOf invite-role
+
+  - model: authentik_core.token
+    conditions:
+      - !If [!Context token]
+    identifiers:
+      identifier: chienami-invite-api
+    attrs:
+      intent: api
+      expiring: false
+      user: !KeyOf invite-user
+      key: !Context token
+      description: chienami-api が招待リンクを発行するためのトークン（Issue #81）
+
+  # --- /invite/ ページの保護（forward_auth） ---
+  - model: authentik_providers_proxy.proxyprovider
+    id: invite-provider
+    identifiers:
+      name: chienami-invite
+    attrs:
+      mode: forward_single
+      external_host: https://portal.lab.local
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+
+  - model: authentik_core.application
+    id: invite-app
+    identifiers:
+      slug: chienami-invite
+    attrs:
+      name: 招待リンク発行
+      provider: !KeyOf invite-provider
+      meta_launch_url: https://portal.lab.local/invite/
+      policy_engine_mode: any
+
+  # 管理者グループのメンバーだけがページを開ける（それ以外はAuthentikの拒否画面になる）。
+  - model: authentik_policies.policybinding
+    identifiers:
+      target: !KeyOf invite-app
+      group: !Find [authentik_core.group, [name, authentik Admins]]
+    attrs:
+      order: 0
+
+  - model: authentik_outposts.outpost
+    identifiers:
+      managed: goauthentik.io/outposts/embedded
+    attrs:
+      providers:
+        - !KeyOf invite-provider
+      config:
+        # 未ログイン時のリダイレクト先。ブラウザから到達できるAuthentikのURLを指定する。
+        authentik_host: https://auth.lab.local/
