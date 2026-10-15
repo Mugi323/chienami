@@ -51,7 +51,7 @@
     target.classList.add("status-error");
   }
 
-  // APIのエラーを管理者向けの文言にする。403はログインし直しで直ることが多い。
+  // APIのエラーを利用者向けの文言にする。403はログインし直しで直ることが多い。
   function errorMessage(resp, action) {
     if (resp.status === 403) return `${action}できませんでした。ページを再読み込みしてログインし直してください。`;
     if (resp.status === 503) return `${action}できませんでした。サーバに CHIENAMI_INVITE_API_TOKEN が設定されていません。`;

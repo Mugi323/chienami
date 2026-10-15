@@ -1,11 +1,11 @@
-# 管理者向け招待リンク発行ページ（Issue #81）。
+# 研究室メンバー向け招待リンク発行ページ（Issue #81）。
 #
-# https://portal.lab.local/invite/ を「authentik Admins」グループのメンバーだけが開けるようにし、
+# https://portal.lab.local/invite/ をAuthentikにログインできる全員が開けるようにし、
 # chienami-api が招待（Invitation）を発行・一覧・削除するための権限を用意する。
 #
 # - ページの保護: Proxy Provider（forward_single）+ 組み込みOutpost。Caddyが /invite/* への
 #   アクセスごとに forward_auth でAuthentikへ問い合わせ、未ログインならauth.lab.localの
-#   ログイン画面へ、管理者以外なら拒否画面へ回す（app/reverse-proxy/Caddyfile）。
+#   ログイン画面へ回す（app/reverse-proxy/Caddyfile）。
 # - APIの権限: サービスアカウント chienami-invite に、招待の作成・閲覧・削除とFlowの閲覧
 #   だけを許すRoleを付与する（管理者トークンを chienami-api に持たせない）。
 #   トークンの値は config/authentik.env と config/docker.env の CHIENAMI_INVITE_API_TOKEN
@@ -15,7 +15,7 @@
 # 組み込みOutpostへ別のProviderを追加している場合は、このファイルにも追記すること。
 version: 1
 metadata:
-  name: 招待リンク発行ページ（管理者限定）
+  name: 招待リンク発行ページ（ログイン済みの全員）
 context:
   token: !Env [CHIENAMI_INVITE_API_TOKEN, null]
 entries:
@@ -94,13 +94,13 @@ entries:
       meta_launch_url: https://portal.lab.local/invite/
       policy_engine_mode: any
 
-  # 管理者グループのメンバーだけがページを開ける（それ以外はAuthentikの拒否画面になる）。
+  # 以前は管理者グループ（authentik Admins）だけに限定していた。ポリシーバインディングが無い
+  # Applicationはログイン済みの全員が開けるため、既存サーバに残っているバインディングを削除する。
   - model: authentik_policies.policybinding
+    state: absent
     identifiers:
       target: !KeyOf invite-app
       group: !Find [authentik_core.group, [name, authentik Admins]]
-    attrs:
-      order: 0
 
   - model: authentik_outposts.outpost
     identifiers:

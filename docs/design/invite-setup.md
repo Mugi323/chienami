@@ -2,14 +2,13 @@
 
 新メンバー用の招待リンク（[authentik-setup.md](authentik-setup.md) 4節の招待制セルフ登録フロー）を、
 Authentik管理画面を開かずに `https://portal.lab.local/invite/` から発行・一覧・削除できるようにする。
-ページを開けるのは Authentik の **`authentik Admins` グループのメンバーだけ**。
+ページはAuthentikに**ログインできるメンバーなら誰でも**開ける（以前は `authentik Admins` グループに限定していた）。
 
 ## 仕組み
 
 ```
 ブラウザ ──> Caddy /invite/*  ──forward_auth──> Authentik（組み込みOutpost）
                  │                                 └ 未ログイン → auth.lab.local のログイン画面
-                 │                                 └ 管理者以外 → 「権限がありません」画面
                  ├ /invite/       → app/invite-ui/（静的ページ）
                  └ /invite/api/*  → chienami-api /invitations（X-Authentik-Username 付き）
                                         └ サービスアカウント chienami-invite のトークンで
@@ -17,14 +16,14 @@ Authentik管理画面を開かずに `https://portal.lab.local/invite/` から�
 ```
 
 - ページの保護・サービスアカウント・権限は `app/authentik/blueprints/invite-admin.yaml` で自動構築する
-  （Proxy Provider `chienami-invite`、Application「招待リンク発行」、`authentik Admins` へのポリシー
-  バインディング、組み込みOutpostへの紐付け、Role `chienami-invite-manager`）。
+  （Proxy Provider `chienami-invite`、Application「招待リンク発行」、組み込みOutpostへの紐付け、
+  Role `chienami-invite-manager`）。ポリシーバインディングは付けないため、ログイン済みの全員が通れる。
 - `chienami-api` に持たせるトークンは **招待の作成・閲覧・削除とFlowの閲覧だけ** ができる権限で、
   管理者権限ではない。
 - Caddyは全経路でクライアントが送った `X-Authentik-*` ヘッダを消し、forward_authを通過したときだけ
   Authentikが付ける。`chienami-api` はこのヘッダが無い `/invitations` へのリクエストを403にする
   （`/search/api/invitations` のような別経路からの呼び出しも拒否される）。
-- Authentik上の招待の作成者はサービスアカウントになるため、実際に発行・削除した管理者は
+- Authentik上の招待の作成者はサービスアカウントになるため、実際に発行・削除したメンバーは
   `chienami-api` のログに残す（`docker compose logs api | grep 招待`）。
 
 ## 1. トークンの設定
@@ -53,6 +52,13 @@ docker compose up -d --build --force-recreate api
 docker compose up -d --force-recreate caddy
 ```
 
+AuthentikはBlueprintのファイルが変わったときしか再適用しないため、トークンを後から追記した場合や
+Blueprintを更新した場合は、手動で適用する（何度実行してもよい）。
+
+```bash
+docker compose exec authentik-worker ak apply_blueprint custom/invite-admin.yaml
+```
+
 Blueprintが適用されたことを確認する（`successful` になっていればよい）。
 
 ```bash
@@ -63,20 +69,18 @@ print(BlueprintInstance.objects.get(path='custom/invite-admin.yaml').status)"
 
 ## 3. 動作確認
 
-1. `https://portal.lab.local/` 下部の「招待リンクの発行（管理者）」を開く。
-   未ログインならAuthentikのログイン画面が出るので、`authentik Admins` のメンバー（`akadmin` 等）で
-   ログインすると発行ページに戻る。
+1. `https://portal.lab.local/` 下部の「招待リンクの発行」を開く。
+   未ログインならAuthentikのログイン画面が出るので、ログインすると発行ページに戻る。
 2. 有効期間と登録できる人数を選んで「発行する」を押し、一覧に追加されたリンクを「コピー」する。
 3. 別のブラウザ（シークレットウィンドウ）でリンクを開き、氏名・パスワードで登録できることを確認する。
-4. 3で登録した一般ユーザのまま `https://portal.lab.local/invite/` を開くと、Authentikの
-   「権限がありません」画面になることを確認する。
+4. 3で登録した一般ユーザのまま `https://portal.lab.local/invite/` を開き、発行ページが使えることを確認する。
 5. 発行ページで「削除」を押すと一覧から消え、そのリンクでは登録できなくなることを確認する。
 
-## 管理者を増やす・減らす
+## 使える人を絞り直す
 
-Authentik管理画面 → **Directory > Groups > authentik Admins** のメンバーを編集する。
-このグループはAuthentik自体の管理者権限も持つため、招待の発行だけを任せたい人を追加する場合は
-注意すること。
+Authentik管理画面 → **Applications > 招待リンク発行 > Policy / Group / User Bindings** で
+グループやユーザを紐付けると、そのメンバーだけに限定できる。ただし Blueprint を再適用しても消えない
+よう、限定し直す場合は `invite-admin.yaml` のポリシーバインディングの `state: absent` も外すこと。
 
 ## 単体テスト
 
