@@ -9,19 +9,27 @@ Dense + KeywordをRRFで統合し、Rerankerで並べ替える。
 /search（semantic）は動作し続け、/chatのみが503を返す（各Phaseは単独で価値を持つ）。
 
 /points（Issue #77）は文書作成量に応じた貢献ポイントのランキングを返す（points.py）。
+
+/invitations（Issue #81）は招待リンクを発行・一覧・削除する（invitations.py）。管理者限定の
+判定はCaddyのforward_auth（Authentik）が行い、通過したリクエストにだけ X-Authentik-Username
+が付く。Caddyはクライアントが送った X-Authentik-* を必ず消すため、このヘッダが無い
+リクエスト（/search/api/ 等の別経路を含む）は403にする。
 """
 
 from __future__ import annotations
 
 import logging
 import os
-from typing import Literal
+import uuid
+from datetime import datetime
+from typing import Annotated, Literal
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient
 
 from .embedding_client import EmbeddingClient
+from .invitations import AuthentikInvitationClient
 from .llm_client import LLMClient
 from .points import OutlineDocumentSource, PointRules, PointsService
 from .rag import AIServiceError, EmbeddingError, RagService, Turn
@@ -65,6 +73,12 @@ OUTLINE_API_TOKEN = _env("OUTLINE_API_TOKEN")
 POINTS_PER_DOCUMENT = int(_env("POINTS_PER_DOCUMENT", "10"))
 POINTS_CHARACTERS_PER_POINT = int(_env("POINTS_CHARACTERS_PER_POINT", "100"))
 POINTS_CACHE_SECONDS = float(_env("POINTS_CACHE_SECONDS", "300"))
+# 招待リンク（Issue #81）。CHIENAMI_INVITE_API_TOKEN が未設定なら/invitationsのみ503。
+AUTHENTIK_INTERNAL_URL = _env("AUTHENTIK_INTERNAL_URL", "http://authentik-server:9000")
+AUTHENTIK_PUBLIC_URL = _env("AUTHENTIK_PUBLIC_URL", "https://auth.lab.local")
+INVITE_FLOW_SLUG = _env("INVITE_FLOW_SLUG", "chienami-invite-enrollment")
+CHIENAMI_INVITE_API_TOKEN = _env("CHIENAMI_INVITE_API_TOKEN")
+INVITE_MAX_VALID_DAYS = 365
 
 app = FastAPI(title="Chienami API")
 
@@ -92,6 +106,13 @@ points_service = PointsService(
         characters_per_point=POINTS_CHARACTERS_PER_POINT,
     ),
     cache_seconds=POINTS_CACHE_SECONDS,
+)
+invitation_client = (
+    AuthentikInvitationClient(
+        AUTHENTIK_INTERNAL_URL, CHIENAMI_INVITE_API_TOKEN, AUTHENTIK_PUBLIC_URL, INVITE_FLOW_SLUG
+    )
+    if CHIENAMI_INVITE_API_TOKEN
+    else None
 )
 
 
@@ -159,6 +180,22 @@ class PointsResponse(BaseModel):
     updated_at: float
     rules: PointRulesResponse
     users: list[UserPointsResponse]
+
+
+class InvitationRequest(BaseModel):
+    valid_days: int = Field(..., ge=1, le=INVITE_MAX_VALID_DAYS, description="有効期間（日）")
+    single_use: bool = Field(..., description="1人が登録したら無効にするか")
+
+
+class InvitationResponse(BaseModel):
+    id: str
+    url: str
+    expires: datetime
+    single_use: bool
+
+
+class InvitationListResponse(BaseModel):
+    invitations: list[InvitationResponse]
 
 
 @app.get("/healthz")
@@ -256,3 +293,62 @@ def points() -> PointsResponse:
         rules=PointRulesResponse(**points_service.rules.__dict__),
         users=[UserPointsResponse(**u.__dict__) for u in users],
     )
+
+
+AdminUsername = Annotated[str | None, Header(alias="X-Authentik-Username")]
+
+
+def _require_invitations(admin: str | None) -> AuthentikInvitationClient:
+    if not admin:
+        raise HTTPException(status_code=403, detail="admin login required")
+    if invitation_client is None:
+        raise HTTPException(status_code=503, detail="invitation service not configured")
+    return invitation_client
+
+
+@app.get("/invitations", response_model=InvitationListResponse)
+def list_invitations(admin: AdminUsername = None) -> InvitationListResponse:
+    client_ = _require_invitations(admin)
+    try:
+        invitations = client_.list_active()
+    except Exception as exc:
+        logger.exception("招待の一覧取得に失敗しました")
+        raise HTTPException(status_code=502, detail="authentik service error") from exc
+    return InvitationListResponse(
+        invitations=[InvitationResponse(**i.__dict__) for i in invitations]
+    )
+
+
+@app.post("/invitations", response_model=InvitationResponse, status_code=201)
+def create_invitation(
+    request: InvitationRequest, admin: AdminUsername = None
+) -> InvitationResponse:
+    client_ = _require_invitations(admin)
+    try:
+        invitation = client_.create(request.valid_days, request.single_use)
+    except Exception as exc:
+        logger.exception("招待の発行に失敗しました")
+        raise HTTPException(status_code=502, detail="authentik service error") from exc
+    # Authentik上の作成者はサービスアカウントになるため、実際に発行した管理者をログに残す。
+    logger.info(
+        "招待を発行しました: id=%s by=%s valid_days=%d single_use=%s",
+        invitation.id,
+        admin,
+        request.valid_days,
+        request.single_use,
+    )
+    return InvitationResponse(**invitation.__dict__)
+
+
+@app.delete("/invitations/{invitation_id}", status_code=204)
+def delete_invitation(invitation_id: uuid.UUID, admin: AdminUsername = None) -> Response:
+    client_ = _require_invitations(admin)
+    try:
+        deleted = client_.delete(str(invitation_id))
+    except Exception as exc:
+        logger.exception("招待の削除に失敗しました")
+        raise HTTPException(status_code=502, detail="authentik service error") from exc
+    if not deleted:
+        raise HTTPException(status_code=404, detail="invitation not found")
+    logger.info("招待を削除しました: id=%s by=%s", invitation_id, admin)
+    return Response(status_code=204)

@@ -235,3 +235,91 @@ def test_points_outline_failure_returns_502(monkeypatch):
     monkeypatch.setattr(main.points_service, "ranking", _raise)
     resp = client.get("/points")
     assert resp.status_code == 502
+
+
+ADMIN = {"X-Authentik-Username": "akadmin"}
+
+
+class _FakeInvitations:
+    def __init__(self):
+        from datetime import UTC, datetime
+
+        from chienami_api.invitations import Invitation
+
+        self.invitation = Invitation(
+            id="0b6c1a52-8a44-4c4c-9f0e-3f2f8f3f6d11",
+            url="https://auth.lab.local/if/flow/chienami-invite-enrollment/?itoken=x",
+            expires=datetime(2026, 10, 22, tzinfo=UTC),
+            single_use=True,
+        )
+        self.created = []
+        self.deleted = []
+
+    def list_active(self):
+        return [self.invitation]
+
+    def create(self, valid_days, single_use):
+        self.created.append((valid_days, single_use))
+        return self.invitation
+
+    def delete(self, invitation_id):
+        self.deleted.append(invitation_id)
+        return invitation_id == self.invitation.id
+
+
+def test_invitations_require_forward_auth_header(monkeypatch):
+    monkeypatch.setattr(main, "invitation_client", _FakeInvitations())
+    assert client.get("/invitations").status_code == 403
+    assert (
+        client.post("/invitations", json={"valid_days": 7, "single_use": True}).status_code == 403
+    )
+
+
+def test_invitations_without_token_returns_503(monkeypatch):
+    monkeypatch.setattr(main, "invitation_client", None)
+    assert client.get("/invitations", headers=ADMIN).status_code == 503
+
+
+def test_create_and_list_invitations(monkeypatch):
+    fake = _FakeInvitations()
+    monkeypatch.setattr(main, "invitation_client", fake)
+
+    resp = client.post("/invitations", json={"valid_days": 7, "single_use": True}, headers=ADMIN)
+    assert resp.status_code == 201
+    assert resp.json()["url"] == fake.invitation.url
+    assert fake.created == [(7, True)]
+
+    resp = client.get("/invitations", headers=ADMIN)
+    assert resp.status_code == 200
+    assert [i["id"] for i in resp.json()["invitations"]] == [fake.invitation.id]
+
+
+def test_create_invitation_validates_valid_days(monkeypatch):
+    monkeypatch.setattr(main, "invitation_client", _FakeInvitations())
+    for days in (0, main.INVITE_MAX_VALID_DAYS + 1):
+        resp = client.post(
+            "/invitations", json={"valid_days": days, "single_use": False}, headers=ADMIN
+        )
+        assert resp.status_code == 422
+
+
+def test_create_invitation_authentik_failure_returns_502(monkeypatch):
+    fake = _FakeInvitations()
+
+    def _raise(valid_days, single_use):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(fake, "create", _raise)
+    monkeypatch.setattr(main, "invitation_client", fake)
+    resp = client.post("/invitations", json={"valid_days": 7, "single_use": True}, headers=ADMIN)
+    assert resp.status_code == 502
+
+
+def test_delete_invitation(monkeypatch):
+    fake = _FakeInvitations()
+    monkeypatch.setattr(main, "invitation_client", fake)
+
+    assert client.delete(f"/invitations/{fake.invitation.id}", headers=ADMIN).status_code == 204
+    other = "00000000-0000-0000-0000-000000000000"
+    assert client.delete(f"/invitations/{other}", headers=ADMIN).status_code == 404
+    assert client.delete("/invitations/not-a-uuid", headers=ADMIN).status_code == 422

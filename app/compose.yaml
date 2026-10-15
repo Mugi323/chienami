@@ -281,6 +281,7 @@ services:
       - ./search-ui:/srv/search-ui:ro
       - ./portal:/srv/portal:ro
       - ./points-ui:/srv/points-ui:ro
+      - ./invite-ui:/srv/invite-ui:ro
       - caddy-data:/data
     depends_on:
       - outline
