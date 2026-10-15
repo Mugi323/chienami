@@ -9,7 +9,7 @@
 #                        （同一オリジンのためCORS設定が不要）。
 #                          /search/ : Chienami Search（セマンティック検索UI, Issue #36, #90）
 #                          /points/ : Chienami Points（貢献ポイントのランキング, Issue #77）
-#                          /invite/ : 招待リンク発行（管理者限定, Issue #81）
+#                          /invite/ : 招待リンク発行（ログイン済みの全員, Issue #81）
 #
 # OutlineのログインはAuthentikへブラウザリダイレクトするため、Authentik側も
 # LAN内の他端末から到達できるホスト名を割り当てる必要がある（127.0.0.1限定のままでは
@@ -38,7 +38,7 @@ portal.lab.local {
 
 	# X-Authentik-* はforward_auth（下の /invite/*）を通過したときだけAuthentikが付ける。
 	# クライアントが偽装したものは全経路で先に消す（chienami-apiは /search/api/ 等からも
-	# 到達できるため、このヘッダの有無で /invitations の管理者判定をしている）。
+	# 到達できるため、このヘッダの有無で /invitations のログイン判定をしている）。
 	request_header -X-Authentik-*
 
 	redir /search /search/
@@ -68,7 +68,7 @@ portal.lab.local {
 		reverse_proxy authentik-server:9000
 	}
 
-	# 招待リンク発行ページ。Authentikにログイン済みの管理者（authentik Admins）だけが通れる
+	# 招待リンク発行ページ。Authentikにログイン済みの全員が通れる
 	# （app/authentik/blueprints/invite-admin.yaml）。ログイン後に元のURLへ戻れるよう、
 	# パスを削る前にforward_authを実行する（routeで記述順に実行させる）。
 	handle /invite/* {

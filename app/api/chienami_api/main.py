@@ -10,7 +10,7 @@ Dense + KeywordをRRFで統合し、Rerankerで並べ替える。
 
 /points（Issue #77）は文書作成量に応じた貢献ポイントのランキングを返す（points.py）。
 
-/invitations（Issue #81）は招待リンクを発行・一覧・削除する（invitations.py）。管理者限定の
+/invitations（Issue #81）は招待リンクを発行・一覧・削除する（invitations.py）。ログインの
 判定はCaddyのforward_auth（Authentik）が行い、通過したリクエストにだけ X-Authentik-Username
 が付く。Caddyはクライアントが送った X-Authentik-* を必ず消すため、このヘッダが無い
 リクエスト（/search/api/ 等の別経路を含む）は403にする。

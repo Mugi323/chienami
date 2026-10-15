@@ -5,7 +5,7 @@ app/authentik/blueprints/enrollment-invite-name-password.yaml）に限定して�
 トークンは招待の作成・閲覧・削除だけを許すサービスアカウントのもの
 （app/authentik/blueprints/invite-admin.yaml）で、管理者権限は持たせない。
 
-誰が発行ページを使えるか（管理者限定）はAPIではなく、Caddyのforward_authと
+誰が発行ページを使えるか（ログイン済みの全員）はAPIではなく、Caddyのforward_authと
 Authentik側のポリシーで判定する。
 """
 

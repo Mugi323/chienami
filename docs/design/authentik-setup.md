@@ -67,7 +67,7 @@ docker compose up -d --force-recreate outline
 入力項目は氏名とパスワード（2回）のみで、メールアドレスは収集しない。ログインIDは入力された氏名をそのまま使う（重複時のみ連番を付与、`app/authentik/blueprints/enrollment-invite-name-password.yaml` 内のExpression Policyで自動生成）。
 
 管理画面での作業は「実際に配布する招待リンクの発行」のみでよい。
-管理者は `https://portal.lab.local/invite/` からも発行・削除できる（Issue #81, [invite-setup.md](invite-setup.md)）。
+ログイン済みのメンバーは誰でも `https://portal.lab.local/invite/` から発行・削除できる（Issue #81, [invite-setup.md](invite-setup.md)）。
 管理画面から発行する場合は以下の手順で行う。
 
 1. **Directory > Invitations > Create** を開く。
