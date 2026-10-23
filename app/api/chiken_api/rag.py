@@ -20,11 +20,11 @@ from typing import Literal, Protocol
 
 from .search import Chunk, Reranker, SearchService, rerank_chunks
 
-logger = logging.getLogger("chienami-api")
+logger = logging.getLogger("chiken-api")
 
 # design書5.2節の3原則（根拠にない内容を断定しない / 不明なら不明と答える / Source IDを示す）。
 NO_ANSWER_TEXT = "資料からは分かりません。"
-SYSTEM_PROMPT = f"""あなたは研究室の知識ベース「Chienami」のアシスタントです。
+SYSTEM_PROMPT = f"""あなたは研究室の知識ベース「Chiken」のアシスタントです。
 ユーザーの質問に、与えられた資料だけを根拠として日本語で答えてください。
 
 規則:

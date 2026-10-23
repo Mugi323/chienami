@@ -1,14 +1,14 @@
 # 管理者向け招待リンク発行ページ（Issue #81）。
 #
 # https://portal.lab.local/invite/ を「authentik Admins」グループのメンバーだけが開けるようにし、
-# chienami-api が招待（Invitation）を発行・一覧・削除するための権限を用意する。
+# chiken-api が招待（Invitation）を発行・一覧・削除するための権限を用意する。
 #
 # - ページの保護: Proxy Provider（forward_single）+ 組み込みOutpost。Caddyが /invite/* への
 #   アクセスごとに forward_auth でAuthentikへ問い合わせ、未ログインならauth.lab.localの
 #   ログイン画面へ、管理者以外なら拒否画面へ回す（app/reverse-proxy/Caddyfile）。
-# - APIの権限: サービスアカウント chienami-invite に、招待の作成・閲覧・削除とFlowの閲覧
-#   だけを許すRoleを付与する（管理者トークンを chienami-api に持たせない）。
-#   トークンの値は config/authentik.env と config/docker.env の CHIENAMI_INVITE_API_TOKEN
+# - APIの権限: サービスアカウント chiken-invite に、招待の作成・閲覧・削除とFlowの閲覧
+#   だけを許すRoleを付与する（管理者トークンを chiken-api に持たせない）。
+#   トークンの値は config/authentik.env と config/docker.env の CHIKEN_INVITE_API_TOKEN
 #   （同じ値、setup.shが自動生成）。未設定ならトークンだけ作らず、API側は503を返す。
 #
 # 注意: 組み込みOutpostの providers は本Blueprintの内容で上書きされる。管理画面から
@@ -17,7 +17,7 @@ version: 1
 metadata:
   name: 招待リンク発行ページ（管理者限定）
 context:
-  token: !Env [CHIENAMI_INVITE_API_TOKEN, null]
+  token: !Env [CHIKEN_INVITE_API_TOKEN, null]
 entries:
   # 初回起動時は既定Flow・管理者グループより先に本Blueprintが適用されることがあるため、
   # 参照するものを作るBlueprintを先に適用させる。
@@ -37,11 +37,11 @@ entries:
         path: default/flow-default-provider-invalidation.yaml
       required: false
 
-  # --- chienami-api 用のサービスアカウントとトークン ---
+  # --- chiken-api 用のサービスアカウントとトークン ---
   - model: authentik_rbac.role
     id: invite-role
     identifiers:
-      name: chienami-invite-manager
+      name: chiken-invite-manager
     attrs:
       permissions:
         - authentik_stages_invitation.add_invitation
@@ -53,9 +53,9 @@ entries:
   - model: authentik_core.user
     id: invite-user
     identifiers:
-      username: chienami-invite
+      username: chiken-invite
     attrs:
-      name: Chienami 招待リンク発行
+      name: Chiken 招待リンク発行
       type: service_account
       path: goauthentik.io/service-accounts
       roles:
@@ -65,19 +65,19 @@ entries:
     conditions:
       - !If [!Context token]
     identifiers:
-      identifier: chienami-invite-api
+      identifier: chiken-invite-api
     attrs:
       intent: api
       expiring: false
       user: !KeyOf invite-user
       key: !Context token
-      description: chienami-api が招待リンクを発行するためのトークン（Issue #81）
+      description: chiken-api が招待リンクを発行するためのトークン（Issue #81）
 
   # --- /invite/ ページの保護（forward_auth） ---
   - model: authentik_providers_proxy.proxyprovider
     id: invite-provider
     identifiers:
-      name: chienami-invite
+      name: chiken-invite
     attrs:
       mode: forward_single
       external_host: https://portal.lab.local
@@ -87,7 +87,7 @@ entries:
   - model: authentik_core.application
     id: invite-app
     identifiers:
-      slug: chienami-invite
+      slug: chiken-invite
     attrs:
       name: 招待リンク発行
       provider: !KeyOf invite-provider

@@ -1,8 +1,8 @@
 # 貢献ポイントのセットアップと動作確認（Issue #77）
 
 Outlineの文書充実に貢献したユーザへポイントを付与し、ランキングとして可視化する。
-`chienami-api` の `GET /points` がOutlineから集計し、静的ページ `app/points-ui/` を
-Caddyが `https://portal.lab.local/points/` として配信する（`/points/api/*` は `chienami-api` へプロキシ）。
+`chiken-api` の `GET /points` がOutlineから集計し、静的ページ `app/points-ui/` を
+Caddyが `https://portal.lab.local/points/` として配信する（`/points/api/*` は `chiken-api` へプロキシ）。
 新しいホスト名を増やすと全端末のhosts追記が必要になるため、既存の `portal.lab.local` の下に
 パスで配置している（端末側の追加設定は不要）。
 
@@ -41,7 +41,7 @@ docker compose exec api python -c "import urllib.request; print(urllib.request.u
 
 ## 2. ブラウザでの確認
 
-1. `https://portal.lab.local/` を開き、「Chienami Points」カードから `https://portal.lab.local/points/` へ遷移する。
+1. `https://portal.lab.local/` を開き、「Chiken Points」カードから `https://portal.lab.local/points/` へ遷移する。
 2. ポイントの付け方・ランキング（順位・名前・文書数・文字数・ポイント）が表示されることを確認する。
 3. Outlineで全員閲覧可Collectionに文書を公開し、キャッシュ時間経過後に再読み込みすると
    ポイントが増えることを確認する。

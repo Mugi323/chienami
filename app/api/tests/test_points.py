@@ -1,6 +1,6 @@
 import httpx
 
-from chienami_api.points import (
+from chiken_api.points import (
     AuthoredDocument,
     OutlineDocumentSource,
     PointRules,

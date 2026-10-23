@@ -1,7 +1,7 @@
-# Chienami ポータルの動作確認（Issue #40）
+# Chiken ポータルの動作確認（Issue #40）
 
 `app/portal/` に追加した静的ページ（素のHTML/CSS、JSなし）を、Caddyが
-`portal.lab.local` として配信する。Outline（`knowledge.lab.local`）とChienami Search
+`portal.lab.local` として配信する。Outline（`knowledge.lab.local`）とChiken Search
 （`portal.lab.local/search/`、Issue #36, #90）のどちらを開くか選ぶための入口ページ。
 
 Dockerコンテナの起動/停止操作は含まない（サーバは常時起動している前提。関連する
@@ -9,7 +9,7 @@ Dockerコンテナの起動/停止操作は含まない（サーバは常時起�
 
 ## 前提
 
-- Issue #26（Reverse ProxyのHTTPS化）・#36（Chienami Search UI）が導入済みであること。
+- Issue #26（Reverse ProxyのHTTPS化）・#36（Chiken Search UI）が導入済みであること。
 - クライアント側の証明書信頼・hosts設定（`portal.lab.local` 含む）は
   [reverse-proxy-setup.md](reverse-proxy-setup.md) の手順に従うこと。
   `app/scripts/setup-client.bat` は本Issueで `portal.lab.local` のhosts追記にも対応済み。
@@ -25,7 +25,7 @@ docker compose ps caddy
 
 1. `https://portal.lab.local/` を開く（証明書エラーが出る場合はルートCAの信頼登録を確認）。
 2. 「Outline」カードをクリックし、`https://knowledge.lab.local/` へ遷移することを確認する。
-3. `https://portal.lab.local/` に戻り、「Chienami Search」カードをクリックし、
+3. `https://portal.lab.local/` に戻り、「Chiken Search」カードをクリックし、
    `https://portal.lab.local/search/` へ遷移することを確認する。
 
 ## 既知の制約

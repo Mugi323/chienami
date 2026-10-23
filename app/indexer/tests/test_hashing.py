@@ -1,4 +1,4 @@
-from chienami_indexer.hashing import content_hash
+from chiken_indexer.hashing import content_hash
 
 
 def test_same_text_same_hash():

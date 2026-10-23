@@ -1,8 +1,8 @@
 import httpx
 import respx
 
-from chienami_eval.metrics import EvalCase
-from chienami_eval.runner import load_cases, run
+from chiken_eval.metrics import EvalCase
+from chiken_eval.runner import load_cases, run
 
 
 def test_load_cases_parses_yaml(tmp_path):
@@ -62,7 +62,7 @@ def test_run_queries_api_and_builds_results():
 
 import json  # noqa: E402
 
-from chienami_eval.runner import main, run_rag  # noqa: E402
+from chiken_eval.runner import main, run_rag  # noqa: E402
 
 
 def _search_body(urls):

@@ -1,7 +1,7 @@
-"""chienami-apiへ質問を投げて、検索（Recall@k / MRR）とRAG回答を評価するCLI。
+"""chiken-apiへ質問を投げて、検索（Recall@k / MRR）とRAG回答を評価するCLI。
 
 使い方:
-  python -m chienami_eval.runner <questions.yaml> [--base-url URL] [--k 1,3,5,10]
+  python -m chiken_eval.runner <questions.yaml> [--base-url URL] [--k 1,3,5,10]
                                  [--mode semantic,hybrid] [--rag]
 
 --mode に複数の検索方式を指定すると、方式ごとの結果を並べて比較できる（Phase 4）。
@@ -129,9 +129,9 @@ def print_rag_report(results: Sequence[RagResult]) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Chienami Search 検索・RAG評価ツール")
+    parser = argparse.ArgumentParser(description="Chiken Search 検索・RAG評価ツール")
     parser.add_argument("questions_file", help="質問セットYAMLファイルのパス")
-    parser.add_argument("--base-url", default="http://api:8000", help="chienami-apiのベースURL")
+    parser.add_argument("--base-url", default="http://api:8000", help="chiken-apiのベースURL")
     parser.add_argument("--k", default="1,3,5,10", help="カンマ区切りのRecall@k一覧")
     parser.add_argument(
         "--mode",

@@ -1,8 +1,8 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/images/chienami_logo_v2_dark.png">
-    <source media="(prefers-color-scheme: light)" srcset="docs/images/chienami_logo_v2_light.png">
-    <img src="docs/images/chienami_logo_v2_light.png" alt="Chienami logo" width="480">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/chiken_logo_v2_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/images/chiken_logo_v2_light.png">
+    <img src="docs/images/chiken_logo_v2_light.png" alt="Chiken logo" width="480">
   </picture>
 </p>
 
@@ -12,13 +12,13 @@
 
 ## 概要
 
-Chienamiは、研究室内の1台のデスクトップPCをサーバとして利用し、Notionのような操作感で研究室ノウハウを蓄積・整理・共有する知識基盤です。
+Chikenは、研究室内の1台のデスクトップPCをサーバとして利用し、Notionのような操作感で研究室ノウハウを蓄積・整理・共有する知識基盤です。
 
 第一段階では知識蓄積機能（Outline Wiki）だけを完成させ、文書取り込み・Semantic Search・RAG/ローカルLLM機能は後から独立して追加できる段階構成とします。研究データを外部クラウドへ送らないことを基本方針とします。
 
 ## 最も重要な考え方
 
-Chienamiの中心はOutlineに保存された知識です。Phase 1ではOutlineだけで価値を成立させます。将来追加する文書取り込み処理、Qdrantの索引、Embedding、RAG、LLMはすべて再構築・交換可能な派生機能とし、知識資産を特定のAI技術へ依存させません。
+Chikenの中心はOutlineに保存された知識です。Phase 1ではOutlineだけで価値を成立させます。将来追加する文書取り込み処理、Qdrantの索引、Embedding、RAG、LLMはすべて再構築・交換可能な派生機能とし、知識資産を特定のAI技術へ依存させません。
 
 最終形でも回答の正本はAIではなくOutline原文とし、検索結果・回答には原文タイトル・章・Outlineへのリンクを付けます。
 
@@ -26,10 +26,10 @@ Chienamiの中心はOutlineに保存された知識です。Phase 1ではOutline
 
 | Phase | 名称 | 内容 | 主な技術 |
 |---|---|---|---|
-| Phase 1 | Chienami Knowledge | Outline Wikiによる知識蓄積・検索・権限管理 | Outline + PostgreSQL + Redis + Reverse Proxy |
+| Phase 1 | Chiken Knowledge | Outline Wikiによる知識蓄積・検索・権限管理 | Outline + PostgreSQL + Redis + Reverse Proxy |
 | Phase 2 | Document Import / Knowledge Circulation | 既存文書の取り込み・下書き生成 | Document Importer |
-| Phase 3 | Chienami Search | Outline文書のSemantic Search | Qdrant + Qwen3-Embedding-0.6B |
-| Phase 4 | Chienami AI | 出典付きRAG回答（ローカルLLM） | llama.cpp + Qwen3-Reranker-0.6B |
+| Phase 3 | Chiken Search | Outline文書のSemantic Search | Qdrant + Qwen3-Embedding-0.6B |
+| Phase 4 | Chiken AI | 出典付きRAG回答（ローカルLLM） | llama.cpp + Qwen3-Reranker-0.6B |
 
 各Phaseは単独で利用価値を持ち、後段のAI機能が停止してもPhase 1の知識蓄積・閲覧は継続できます。
 
@@ -50,7 +50,7 @@ Chienamiの中心はOutlineに保存された知識です。Phase 1ではOutline
 ## ディレクトリ構成
 
 ```
-chienami/
+chiken/
 ├─ app/                  # 実行設定（Git管理）
 │  ├─ reverse-proxy/     # Reverse Proxy設定
 │  ├─ config/            # 各種設定ファイル
@@ -69,7 +69,7 @@ chienami/
 `main`は開発の最新状態を追跡するため、サーバ導入時は必ずリリースブランチを指定してください。
 
 ```bash
-git clone -b release/v2-rag https://github.com/Mugi323/chienami.git
+git clone -b release/v2-rag https://github.com/Mugi323/chienami.git chiken
 ```
 
 既存のサーバを `release/v1-no-rag` から切り替える場合:
@@ -131,7 +131,7 @@ Issue作成 → ブランチ作成 → 実装 → Push → Pull Request → CI �
 
 - [システム設計書 v1.4](docs/system_design_v1.4.md) — アーキテクチャ、コンポーネント設計、セキュリティ、バックアップ・復旧、導入ロードマップなどの詳細
 - [起動・停止スクリプトの使い方](docs/design/scripts-usage.md) — `app/scripts/` の `setup.sh` / `start.sh` / `stop.sh` の使い方
-- [GPU非搭載の開発機での起動](docs/design/cpu-dev-setup.md) — `CHIENAMI_CPU=1` でCPU用overrideを重ねて起動する方法
-- [文書データの保存先の指定](docs/design/data-dir-setup.md) — `CHIENAMI_DATA_DIR` で正本データを `/srv/chienami/data` 等へ保存する方法
+- [GPU非搭載の開発機での起動](docs/design/cpu-dev-setup.md) — `CHIKEN_CPU=1` でCPU用overrideを重ねて起動する方法
+- [文書データの保存先の指定](docs/design/data-dir-setup.md) — `CHIKEN_DATA_DIR` で正本データを `/srv/chiken/data` 等へ保存する方法
 - [Reranker基盤の動作確認](docs/design/reranker-setup.md) — llama.cpp + Qwen3-Reranker-0.6B（Phase 4）
 - [RAG（/chat）の動作確認](docs/design/rag-setup.md) — 出典付き回答の仕組み・設定・GPU機での確認項目（Phase 4）

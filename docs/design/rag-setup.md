@@ -1,7 +1,7 @@
 # RAG（/chat）の動作確認（Phase 4）
 
-chienami-api の `POST /chat` は、研究室の知識ベースを根拠にした**出典付き回答**を返す。
-実装は `app/api/chienami_api/rag.py`、APIの形はdesign書10章の「Phase 4 chatリクエスト/レスポンス例」を参照。
+chiken-api の `POST /chat` は、研究室の知識ベースを根拠にした**出典付き回答**を返す。
+実装は `app/api/chiken_api/rag.py`、APIの形はdesign書10章の「Phase 4 chatリクエスト/レスポンス例」を参照。
 
 ## 処理の流れ
 

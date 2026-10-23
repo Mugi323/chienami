@@ -1,8 +1,8 @@
-# Chienami Search UI の動作確認（Issue #36）
+# Chiken Search UI の動作確認（Issue #36）
 
 `app/search-ui/` に追加した静的ファイル（素のHTML/CSS/JS、ビルド不要）を、Caddyが
 `https://portal.lab.local/search/` として配信する（Issue #90で `search.lab.local` から移行）。
-`/search/api/*` は同一オリジンで `chienami-api`（Issue #34）へリバースプロキシされるため、
+`/search/api/*` は同一オリジンで `chiken-api`（Issue #34）へリバースプロキシされるため、
 ブラウザ側のCORS設定は不要。
 
 > 会話履歴はブラウザのlocalStorage（オリジン単位）に保存されるため、`search.lab.local` 時代の
@@ -10,7 +10,7 @@
 
 ## 前提
 
-- Issue #26（Reverse ProxyのHTTPS化）・#34（chienami-api）が導入済みであること。
+- Issue #26（Reverse ProxyのHTTPS化）・#34（chiken-api）が導入済みであること。
 - 各端末で `portal.lab.local` を開けること（[reverse-proxy-setup.md](reverse-proxy-setup.md)）。
 
 ## 1. サーバ側の起動確認
@@ -31,7 +31,7 @@ docker compose ps caddy
 
 ### 会話履歴（localStorage）
 
-- AI回答の会話（質問・回答・出典）は、**ブラウザのlocalStorage**（キー `chienami.conversations.v1`）に保存する。サーバには保存しない
+- AI回答の会話（質問・回答・出典）は、**ブラウザのlocalStorage**（キー `chiken.conversations.v1`）に保存する。サーバには保存しない
 - 同じ端末・同じブラウザでのみ表示される。ブラウザのサイト データを消すと消える
 - 直近50件まで保存し、古いものから消える。タイトルは最初の質問の先頭30文字
 - 履歴にマウスを乗せると出る×で削除できる（確認なし）
@@ -46,7 +46,7 @@ docker compose ps caddy
 1. `https://portal.lab.local/search/` を開く（証明書エラーが出る場合はルートCAの信頼登録を確認）。
 2. サイドバーの「検索」でキーワードを入力して送信し、結果カードのタイトル・「Outlineで開く →」リンクの両方から該当のOutlineページ（`https://knowledge.lab.local/...`）を新しいタブで開けることを確認する。
 3. 該当する文書が無いキーワードで検索し、「一致する文書が見つかりませんでした。」が表示されることを確認する。
-4. `chienami-api` を一時的に停止し（`docker compose stop api`）、検索してエラー表示（「検索APIに接続できませんでした」等）になることを確認した後、再起動する（`docker compose start api`）。
+4. `chiken-api` を一時的に停止し（`docker compose stop api`）、検索してエラー表示（「検索APIに接続できませんでした」等）になることを確認した後、再起動する（`docker compose start api`）。
 
 ### AI回答（Phase 4, Issue #63）
 

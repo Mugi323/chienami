@@ -1,7 +1,7 @@
 import httpx
 import respx
 
-from chienami_indexer.outline_client import OutlineClient
+from chiken_indexer.outline_client import OutlineClient
 
 
 @respx.mock

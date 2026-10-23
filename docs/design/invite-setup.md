@@ -11,21 +11,21 @@ Authentik管理画面を開かずに `https://portal.lab.local/invite/` から�
                  │                                 └ 未ログイン → auth.lab.local のログイン画面
                  │                                 └ 管理者以外 → 「権限がありません」画面
                  ├ /invite/       → app/invite-ui/（静的ページ）
-                 └ /invite/api/*  → chienami-api /invitations（X-Authentik-Username 付き）
-                                        └ サービスアカウント chienami-invite のトークンで
+                 └ /invite/api/*  → chiken-api /invitations（X-Authentik-Username 付き）
+                                        └ サービスアカウント chiken-invite のトークンで
                                           Authentik の Invitation API を呼ぶ
 ```
 
 - ページの保護・サービスアカウント・権限は `app/authentik/blueprints/invite-admin.yaml` で自動構築する
-  （Proxy Provider `chienami-invite`、Application「招待リンク発行」、`authentik Admins` へのポリシー
-  バインディング、組み込みOutpostへの紐付け、Role `chienami-invite-manager`）。
-- `chienami-api` に持たせるトークンは **招待の作成・閲覧・削除とFlowの閲覧だけ** ができる権限で、
+  （Proxy Provider `chiken-invite`、Application「招待リンク発行」、`authentik Admins` へのポリシー
+  バインディング、組み込みOutpostへの紐付け、Role `chiken-invite-manager`）。
+- `chiken-api` に持たせるトークンは **招待の作成・閲覧・削除とFlowの閲覧だけ** ができる権限で、
   管理者権限ではない。
 - Caddyは全経路でクライアントが送った `X-Authentik-*` ヘッダを消し、forward_authを通過したときだけ
-  Authentikが付ける。`chienami-api` はこのヘッダが無い `/invitations` へのリクエストを403にする
+  Authentikが付ける。`chiken-api` はこのヘッダが無い `/invitations` へのリクエストを403にする
   （`/search/api/invitations` のような別経路からの呼び出しも拒否される）。
 - Authentik上の招待の作成者はサービスアカウントになるため、実際に発行・削除した管理者は
-  `chienami-api` のログに残す（`docker compose logs api | grep 招待`）。
+  `chiken-api` のログに残す（`docker compose logs api | grep 招待`）。
 
 ## 1. トークンの設定
 
@@ -35,11 +35,11 @@ Authentik管理画面を開かずに `https://portal.lab.local/invite/` から�
 
 ```bash
 token="$(openssl rand -hex 32)"
-echo "CHIENAMI_INVITE_API_TOKEN=$token" >> app/config/docker.env
-echo "CHIENAMI_INVITE_API_TOKEN=$token" >> app/config/authentik.env
+echo "CHIKEN_INVITE_API_TOKEN=$token" >> app/config/docker.env
+echo "CHIKEN_INVITE_API_TOKEN=$token" >> app/config/authentik.env
 ```
 
-未設定の場合もページの保護は有効で、発行操作だけが「サーバに CHIENAMI_INVITE_API_TOKEN が
+未設定の場合もページの保護は有効で、発行操作だけが「サーバに CHIKEN_INVITE_API_TOKEN が
 設定されていません」と表示されて失敗する（`/invitations` が503を返す）。
 
 ## 2. サーバ側の反映

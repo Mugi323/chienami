@@ -1,4 +1,4 @@
-"""chienami-indexer エントリポイント。
+"""chiken-indexer エントリポイント。
 
 一定間隔（INDEXER_INTERVAL_SECONDS）でOutlineの「全員閲覧可Collection」内の公開済み
 文書を取得し、変更があったものだけEmbeddingしてQdrantへ格納する（design書5.1節）。
@@ -17,7 +17,7 @@ from .outline_client import OutlineClient
 from .store import QdrantStore
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
-logger = logging.getLogger("chienami-indexer")
+logger = logging.getLogger("chiken-indexer")
 
 # Qwen3-Embedding-0.6Bの出力次元数（design書4.4節）。
 EMBEDDING_VECTOR_SIZE = 1024
@@ -88,7 +88,7 @@ def main() -> None:
     embedding_url = _env("EMBEDDING_URL", "http://embedding:80")
     qdrant_url = _env("QDRANT_URL", "http://qdrant:6333")
     qdrant_api_key = _env("QDRANT_API_KEY", required=True)
-    qdrant_collection = _env("QDRANT_COLLECTION", "chienami_documents")
+    qdrant_collection = _env("QDRANT_COLLECTION", "chiken_documents")
     interval = int(_env("INDEXER_INTERVAL_SECONDS", "600"))
     chunk_size = int(_env("INDEXER_CHUNK_SIZE", "1000"))
     chunk_overlap = int(_env("INDEXER_CHUNK_OVERLAP", "100"))

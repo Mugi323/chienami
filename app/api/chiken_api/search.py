@@ -16,7 +16,7 @@ from typing import Any, Protocol
 from qdrant_client import QdrantClient
 from qdrant_client.http import models as qmodels
 
-logger = logging.getLogger("chienami-api")
+logger = logging.getLogger("chiken-api")
 
 
 @dataclass(frozen=True)

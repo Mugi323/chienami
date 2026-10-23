@@ -1,4 +1,4 @@
-# chienami-indexer の設定・動作確認（Issue #32）
+# chiken-indexer の設定・動作確認（Issue #32）
 
 `app/indexer/` に追加したPythonサービス。Outlineの「全員閲覧可Collection」内の公開済み文書を
 定期的にEmbeddingし、Qdrant（Issue #30）へ格納する。
@@ -6,7 +6,7 @@
 ## 1. Outline APIキーの発行
 
 1. `https://knowledge.lab.local` へ管理者アカウントでログインする。
-2. `Settings → API & Apps` を開き、新しいAPIキーを発行する（名前は `chienami-indexer` 等、
+2. `Settings → API & Apps` を開き、新しいAPIキーを発行する（名前は `chiken-indexer` 等、
    識別しやすいものにする）。
 3. 発行されたキーを `config/docker.env` の `OUTLINE_API_TOKEN` に設定する。
    **APIキーはOutlineの全データへアクセスできるため、パスワードと同様に扱うこと。**
@@ -37,7 +37,7 @@ Qdrant側にデータが入ったことを確認する場合は
 ```bash
 docker compose run --rm --no-deps --entrypoint sh outline -c \
   "wget -qO- --header='api-key: <QDRANT_API_KEYの値>' \
-   http://qdrant:6333/collections/chienami_documents"
+   http://qdrant:6333/collections/chiken_documents"
 ```
 
 `points_count` が0より大きければ索引化されている。

@@ -4,8 +4,8 @@ os.environ.setdefault("QDRANT_API_KEY", "test-key")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from chienami_api import main  # noqa: E402
-from chienami_api.search import SearchResult  # noqa: E402
+from chiken_api import main  # noqa: E402
+from chiken_api.search import SearchResult  # noqa: E402
 
 client = TestClient(main.app)
 
@@ -56,7 +56,7 @@ def test_search_embedding_failure_returns_502(monkeypatch):
 
 
 def test_search_hybrid_mode_dedupes_reranked_chunks(monkeypatch):
-    from chienami_api.search import Chunk
+    from chiken_api.search import Chunk
 
     def _chunk(doc, idx, score):
         return Chunk(doc, f"t{doc}", f"https://knowledge.lab.local/doc/{doc}", idx, "本文", score)
@@ -86,8 +86,8 @@ def test_search_rejects_unknown_mode():
 
 
 def test_chat_returns_answer_with_sources(monkeypatch):
-    from chienami_api.rag import RagAnswer, Source
-    from chienami_api.search import Chunk
+    from chiken_api.rag import RagAnswer, Source
+    from chiken_api.search import Chunk
 
     chunk = Chunk("d1", "PCR手順", "https://knowledge.lab.local/doc/d1", 2, "58度", 0.95)
     captured = {}
@@ -124,7 +124,7 @@ def test_chat_returns_answer_with_sources(monkeypatch):
 
 
 def test_chat_passes_history(monkeypatch):
-    from chienami_api.rag import RagAnswer, Turn
+    from chiken_api.rag import RagAnswer, Turn
 
     captured = {}
 
@@ -161,7 +161,7 @@ def test_chat_validates_request():
 
 
 def test_chat_returns_503_when_ai_service_down(monkeypatch):
-    from chienami_api.rag import AIServiceError
+    from chiken_api.rag import AIServiceError
 
     def _raise(question, top_k=None, history=None):
         raise AIServiceError("llm error")
@@ -171,7 +171,7 @@ def test_chat_returns_503_when_ai_service_down(monkeypatch):
 
 
 def test_chat_returns_502_when_embedding_down(monkeypatch):
-    from chienami_api.rag import EmbeddingError
+    from chiken_api.rag import EmbeddingError
 
     def _raise(question, top_k=None, history=None):
         raise EmbeddingError("down")
@@ -193,7 +193,7 @@ def test_search_still_works_when_ai_services_are_down(monkeypatch):
 
 
 def test_points_returns_ranking(monkeypatch):
-    from chienami_api.points import UserPoints
+    from chiken_api.points import UserPoints
 
     monkeypatch.setattr(main.points_service, "_source", object())
     monkeypatch.setattr(
@@ -244,11 +244,11 @@ class _FakeInvitations:
     def __init__(self):
         from datetime import UTC, datetime
 
-        from chienami_api.invitations import Invitation
+        from chiken_api.invitations import Invitation
 
         self.invitation = Invitation(
             id="0b6c1a52-8a44-4c4c-9f0e-3f2f8f3f6d11",
-            url="https://auth.lab.local/if/flow/chienami-invite-enrollment/?itoken=x",
+            url="https://auth.lab.local/if/flow/chiken-invite-enrollment/?itoken=x",
             expires=datetime(2026, 10, 22, tzinfo=UTC),
             single_use=True,
         )

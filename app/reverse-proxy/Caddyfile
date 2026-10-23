@@ -2,13 +2,13 @@
 #
 # knowledge.lab.local : Outline本体（研究者が直接触るアプリ）
 # auth.lab.local       : Authentik（OIDCログイン画面・招待リンク経由の登録画面）
-# portal.lab.local      : Chienami ポータル（Outline/Search選択画面, Issue #40）。
+# portal.lab.local      : Chiken ポータル（Outline/Search選択画面, Issue #40）。
 #                        配下のアプリはホスト名を分けずパスで配置する（ホスト名を増やすと
 #                        全端末のhosts追記が必要になるため）。いずれも静的ファイルはCaddyが
-#                        直接配信し、<パス>/api/* のみ chienami-api へプロキシする
+#                        直接配信し、<パス>/api/* のみ chiken-api へプロキシする
 #                        （同一オリジンのためCORS設定が不要）。
-#                          /search/ : Chienami Search（セマンティック検索UI, Issue #36, #90）
-#                          /points/ : Chienami Points（貢献ポイントのランキング, Issue #77）
+#                          /search/ : Chiken Search（セマンティック検索UI, Issue #36, #90）
+#                          /points/ : Chiken Points（貢献ポイントのランキング, Issue #77）
 #                          /invite/ : 招待リンク発行（管理者限定, Issue #81）
 #
 # OutlineのログインはAuthentikへブラウザリダイレクトするため、Authentik側も
@@ -37,7 +37,7 @@ portal.lab.local {
 	tls internal
 
 	# X-Authentik-* はforward_auth（下の /invite/*）を通過したときだけAuthentikが付ける。
-	# クライアントが偽装したものは全経路で先に消す（chienami-apiは /search/api/ 等からも
+	# クライアントが偽装したものは全経路で先に消す（chiken-apiは /search/api/ 等からも
 	# 到達できるため、このヘッダの有無で /invitations の管理者判定をしている）。
 	request_header -X-Authentik-*
 

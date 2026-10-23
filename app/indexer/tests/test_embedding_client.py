@@ -2,7 +2,7 @@ import httpx
 import pytest
 import respx
 
-from chienami_indexer.embedding_client import EmbeddingClient
+from chiken_indexer.embedding_client import EmbeddingClient
 
 
 def test_embed_empty_list_returns_empty_without_request():

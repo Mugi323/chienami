@@ -71,7 +71,7 @@ class AuthentikInvitationClient:
         now = now or datetime.now(UTC)
         payload = {
             # Invitation.name はslug（英数字・-・_）のみ許されるため、日時とランダム値で一意にする。
-            "name": f"chienami-{now:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}",
+            "name": f"chiken-{now:%Y%m%d-%H%M%S}-{secrets.token_hex(2)}",
             "expires": (now + timedelta(days=valid_days)).isoformat(),
             "single_use": single_use,
             "flow": self._flow(),

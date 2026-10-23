@@ -1,6 +1,6 @@
 """text-embeddings-inference (TEI) クライアント。
 
-chienami-indexer（app/indexer/chienami_indexer/embedding_client.py）と同一の
+chiken-indexer（app/indexer/chiken_indexer/embedding_client.py）と同一の
 小さなクライアントを、サービス間の共有パッケージ化はせずあえて複製している。
 両サービスとも単一メソッドの薄いラッパーであり、共有ライブラリを新設するほどの
 重複ではないと判断した。

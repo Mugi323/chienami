@@ -62,7 +62,7 @@ docker compose up -d --force-recreate outline
 
 ## 4. 招待リンクによるセルフ登録
 
-招待制セルフ登録フロー「研究室メンバー登録」（slug: `chienami-invite-enrollment`）は、
+招待制セルフ登録フロー「研究室メンバー登録」（slug: `chiken-invite-enrollment`）は、
 `app/authentik/blueprints/enrollment-invite-name-password.yaml` により**自動構築済み**（Invitation → Prompt(氏名/パスワード/パスワード確認) → User write → User login）。
 入力項目は氏名とパスワード（2回）のみで、メールアドレスは収集しない。ログインIDは入力された氏名をそのまま使う（重複時のみ連番を付与、`app/authentik/blueprints/enrollment-invite-name-password.yaml` 内のExpression Policyで自動生成）。
 
@@ -73,7 +73,7 @@ docker compose up -d --force-recreate outline
 1. **Directory > Invitations > Create** を開く。
 2. **Flow** に「研究室メンバー登録」を選択する。
 3. 有効期限（例: 学期末まで）や単一/複数回使用可否を設定して発行する。
-4. 発行された招待URL（例: `https://auth.lab.local/if/flow/chienami-invite-enrollment/?itoken=<token>`）を研究室内で共有する（対面・学内チャット等。メール送信は行わない）。
+4. 発行された招待URL（例: `https://auth.lab.local/if/flow/chiken-invite-enrollment/?itoken=<token>`）を研究室内で共有する（対面・学内チャット等。メール送信は行わない）。
 
 ### 動作確認
 

@@ -1,4 +1,4 @@
-# chienami-api の動作確認（Issue #34）
+# chiken-api の動作確認（Issue #34）
 
 `app/api/` に追加したFastAPIサービス。クエリをEmbeddingし、Qdrant（Issue #30/#32）から
 検索結果を返す。ブラウザ向けUI・Reverse Proxyでの公開はIssue #4（検索UI）で行うため、
@@ -49,7 +49,7 @@ docker compose run --rm --no-deps --entrypoint sh outline -c \
   "wget -qO- 'http://api:8000/search?q=PCRのアニーリング温度&limit=5&mode=hybrid'"
 ```
 
-処理の流れ（`app/api/chienami_api/search.py` の `SearchService.hybrid_chunks`）:
+処理の流れ（`app/api/chiken_api/search.py` の `SearchService.hybrid_chunks`）:
 
 1. **Dense**: クエリのEmbeddingでQdrantを検索し、上位 `API_HYBRID_CANDIDATES` 件（既定20）のチャンクを取る
 2. **Keyword**: クエリから漢字・カタカナ・英数字の連続を抜き出し（ひらがなは除く。最大8語）、

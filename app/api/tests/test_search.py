@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from chienami_api.search import dedupe_by_document
+from chiken_api.search import dedupe_by_document
 
 
 def _hit(document_id: str, score: float, chunk_index: int = 0, title: str = "title"):
@@ -49,7 +49,7 @@ def test_dedupe_handles_empty_hits():
 
 # --- Hybrid検索（Phase 4） ---
 
-from chienami_api.search import (  # noqa: E402
+from chiken_api.search import (  # noqa: E402
     Chunk,
     SearchService,
     extract_keywords,

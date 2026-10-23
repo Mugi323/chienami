@@ -1,4 +1,4 @@
-# Chienami Search 検索評価用の質問セット（design書11章）。
+# Chiken Search 検索評価用の質問セット（design書11章）。
 #
 # 使い方:
 #   1. このファイルを questions.yaml としてコピーする
@@ -6,7 +6,7 @@
 #       コピー後そのままコミットしてよい）。
 #   2. 研究室の実際のOutline文書をもとに、20〜50問程度の「正解が分かっている質問」に
 #      差し替える。expected_urls には、その質問に対する正しい根拠文書のURLを1つ以上
-#      指定する（chienami-indexerがQdrantへ格納するurlと同じ形式・完全一致で判定される）。
+#      指定する（chiken-indexerがQdrantへ格納するurlと同じ形式・完全一致で判定される）。
 #   3. `docker compose run --rm eval` で実行する。
 #      ハイブリッド検索との比較・RAG回答の評価は
 #      `docker compose run --rm eval /app/questions.yaml --mode semantic,hybrid --rag`。
