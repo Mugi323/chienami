@@ -23,7 +23,7 @@ Issue #24で追加した `app/scripts/` 配下のスクリプトにより、`app
   - OutlineのDBパスワードとAuthentikのDBパスワードは別々の値を生成する。
   - `docker.env` の `POSTGRES_PASSWORD` と `DATABASE_URL` 内のパスワードは同じ値になる。
   - `authentik.env` の `POSTGRES_PASSWORD` と `AUTHENTIK_POSTGRESQL__PASSWORD` は同じ値になる。
-  - 招待リンク発行用の `CHIENAMI_INVITE_API_TOKEN` は `docker.env` と `authentik.env` で同じ値になる
+  - 招待リンク発行用の `CHIKEN_INVITE_API_TOKEN` は `docker.env` と `authentik.env` で同じ値になる
     （片方のファイルが既にあれば、その値を引き継ぐ。[invite-setup.md](invite-setup.md)）。
 - **既にファイルが存在する場合は一切変更しない。** 何度実行しても安全（再実行してよい）。
 - `OIDC_CLIENT_ID` / `OIDC_CLIENT_SECRET` は空のまま残る。Authentik管理画面でOutline用の
@@ -66,35 +66,35 @@ Issue #24で追加した `app/scripts/` 配下のスクリプトにより、`app
 CI等の非対話環境から実行する場合は `--yes` を明示的に付けない限り拒否される
 (`./app/scripts/stop.sh --reset-data --yes`)。
 
-## 4. GPU非搭載の開発機: `CHIENAMI_CPU=1`
+## 4. GPU非搭載の開発機: `CHIKEN_CPU=1`
 
-どのスクリプトも、環境変数 `CHIENAMI_CPU=1` を付けるとCPU用のoverride `app/compose.cpu.yaml` を重ねて
-`docker compose` を実行する（例: `CHIENAMI_CPU=1 ./app/scripts/start.sh`）。詳細は
+どのスクリプトも、環境変数 `CHIKEN_CPU=1` を付けるとCPU用のoverride `app/compose.cpu.yaml` を重ねて
+`docker compose` を実行する（例: `CHIKEN_CPU=1 ./app/scripts/start.sh`）。詳細は
 [cpu-dev-setup.md](cpu-dev-setup.md) を参照。
 
-## 5. 正本データの保存先を指定する: `CHIENAMI_DATA_DIR`
+## 5. 正本データの保存先を指定する: `CHIKEN_DATA_DIR`
 
-`app/config/docker.env` に `CHIENAMI_DATA_DIR`（絶対パス）を書くと、override `app/compose.data.yaml` を重ね、
+`app/config/docker.env` に `CHIKEN_DATA_DIR`（絶対パス）を書くと、override `app/compose.data.yaml` を重ね、
 Outline・Authentikの正本データ（DB・添付ファイル）をnamed volumeではなくそのディレクトリ配下に保存する
-（例: `CHIENAMI_DATA_DIR=/srv/chienami/data`）。同名の環境変数が設定されていればそちらを優先する。`start.sh` は起動前にディレクトリの
+（例: `CHIKEN_DATA_DIR=/srv/chiken/data`）。同名の環境変数が設定されていればそちらを優先する。`start.sh` は起動前にディレクトリの
 作成と所有者の設定も行う。`stop.sh --reset-data` はこのディレクトリを削除しない。詳細は
 [data-dir-setup.md](data-dir-setup.md) を参照。
 
 ## 6. バックアップ: `backup.sh`（暫定）
 
-`app/config/docker.env` の `CHIENAMI_BACKUP_DIR`（絶対パス）配下に、`YYYY-MM-DD_HHMMSS/` のスナップショットを作り
+`app/config/docker.env` の `CHIKEN_BACKUP_DIR`（絶対パス）配下に、`YYYY-MM-DD_HHMMSS/` のスナップショットを作り
 `latest` を最新へ向ける。中身は Outline・Authentik の `pg_dump -Fc`、Outline の添付ファイル、Authentik のデータ、
 `config/*.env`（シークレットを含むが、運用方針として誰でも読める権限で保存）。前回から変わらないファイルは `rsync --link-dest` の
-ハードリンクで共有するため、増える容量は差分だけ。`CHIENAMI_BACKUP_KEEP`（既定7）より古いものは削除する。
+ハードリンクで共有するため、増える容量は差分だけ。`CHIKEN_BACKUP_KEEP`（既定7）より古いものは削除する。
 Qdrant・モデルキャッシュ・Caddyの証明書は再生成できるため対象外。
 
 現在は cron で毎日 3:30 に実行している（ログは `logs/backup.log`）:
 
 ```
-30 3 * * * /home/user/web_app/chienami/app/scripts/backup.sh >> /home/user/web_app/chienami/logs/backup.log 2>&1
+30 3 * * * /home/user/web_app/chiken/app/scripts/backup.sh >> /home/user/web_app/chiken/logs/backup.log 2>&1
 ```
 
-保存先を移すときは `CHIENAMI_BACKUP_DIR` の行だけ書き換える。過去分も引き継ぐ場合は、旧保存先を
+保存先を移すときは `CHIKEN_BACKUP_DIR` の行だけ書き換える。過去分も引き継ぐ場合は、旧保存先を
 `rsync -aH 旧/ 新/` でコピーする（`-H` でハードリンクを保ったまま移せる）。
 
 復元例: `docker compose exec -T postgres sh -c 'pg_restore -U "$POSTGRES_USER" -d "$POSTGRES_DB" --clean' < latest/outline-postgres.dump`

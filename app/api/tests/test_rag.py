@@ -1,6 +1,6 @@
 import pytest
 
-from chienami_api.rag import (
+from chiken_api.rag import (
     ABSTAIN_ANSWER,
     HISTORY_MAX_CHARS,
     NO_ANSWER_TEXT,
@@ -20,7 +20,7 @@ from chienami_api.rag import (
     select_sources,
     trim_history,
 )
-from chienami_api.search import Chunk
+from chiken_api.search import Chunk
 
 
 def _chunk(document_id: str, score: float, text: str = "", chunk_index: int = 0) -> Chunk:

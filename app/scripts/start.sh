@@ -8,7 +8,7 @@ usage() {
   cat <<'EOF'
 使い方: start.sh [-h|--help]
 
-config/*.env が無ければ自動生成した上で、Chienamiの全コンテナを起動します
+config/*.env が無ければ自動生成した上で、Chikenの全コンテナを起動します
 （内部で setup.sh --no-up を呼び出します。envが既に存在する場合は即座にスキップされます）。
 EOF
 }

@@ -5,6 +5,6 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY chienami_indexer ./chienami_indexer
+COPY chiken_indexer ./chiken_indexer
 
-CMD ["python", "-m", "chienami_indexer.main"]
+CMD ["python", "-m", "chiken_indexer.main"]

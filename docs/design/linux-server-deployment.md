@@ -1,7 +1,7 @@
 # Linuxサーバ導入・動作確認手順書（Issue #28）
 
 これまでの開発・検証はWindows/WSL2環境で行ってきた。本手順書は、実際のLinuxサーバへ
-Chienamiを導入し、同一LAN内のWindows PCから `https://knowledge.lab.local` へ問題なく
+Chikenを導入し、同一LAN内のWindows PCから `https://knowledge.lab.local` へ問題なく
 アクセスできることを確認するための手順をまとめたものである。
 
 **対象読者**: サーバへの初回導入作業を行う研究室メンバー。
@@ -9,7 +9,7 @@ Chienamiを導入し、同一LAN内のWindows PCから `https://knowledge.lab.lo
 **本手順書のスコープ**: 動作確認できる状態までの導入に限定する。以下は対象外。
 
 - バックアップ・復元（Issue #16、保留中）
-- `/srv/chienami` への本番向けディレクトリ構成の正式運用（`docs/system_design_v1.4.md` 4.2節）。
+- `/srv/chiken` への本番向けディレクトリ構成の正式運用（`docs/system_design_v1.4.md` 4.2節）。
   ただし正本データの保存先の指定（4節）は本手順に含める
 - 開発環境（WSL2）から本番環境へのデータ移行
 
@@ -80,8 +80,8 @@ sudo reboot
 ## 3. リポジトリの取得
 
 ```bash
-git clone git@github.com:Mugi323/chienami.git
-cd chienami/app
+git clone git@github.com:Mugi323/chienami.git chiken
+cd chiken/app
 ```
 
 ## 4. 初回セットアップと起動
@@ -89,19 +89,19 @@ cd chienami/app
 `app/scripts/start.sh` を実行すると、`config/docker.env` / `config/authentik.env` が
 無ければ自動生成した上で全コンテナが起動する（詳細: [scripts-usage.md](scripts-usage.md)）。
 
-正本データ（Outline・AuthentikのDBと添付ファイル）は `/srv/chienami/data` に保存する
+正本データ（Outline・AuthentikのDBと添付ファイル）は `/srv/chiken/data` に保存する
 （[data-dir-setup.md](data-dir-setup.md)）。起動前に保存先を用意し、`config/docker.env` を生成する。
 
 ```bash
-sudo mkdir -p /srv/chienami/data
-sudo chown "$USER" /srv/chienami/data
+sudo mkdir -p /srv/chiken/data
+sudo chown "$USER" /srv/chiken/data
 ./scripts/setup.sh --no-up
 ```
 
-生成された `config/docker.env` の `CHIENAMI_DATA_DIR=` の行に保存先を書く。
+生成された `config/docker.env` の `CHIKEN_DATA_DIR=` の行に保存先を書く。
 
 ```bash
-CHIENAMI_DATA_DIR=/srv/chienami/data
+CHIKEN_DATA_DIR=/srv/chiken/data
 ```
 
 ```bash
@@ -195,8 +195,8 @@ sudo systemctl enable docker
 [reverse-proxy-setup.md](reverse-proxy-setup.md) 3節の手順で証明書を取り出す。
 
 ```bash
-cd ~/chienami/app
-docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt > chienami-root-ca.crt
+cd ~/chiken/app
+docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt > chiken-root-ca.crt
 ```
 
 `app/scripts/setup-client.bat` をコピーし、冒頭の `HOST_IP` を1節で確認した
@@ -210,7 +210,7 @@ set HOST_IP=192.0.2.1
 set HOST_IP=<サーバのLAN内IP>
 ```
 
-`chienami-root-ca.crt` と書き換え済みの `setup-client.bat` を同じフォルダにまとめ、
+`chiken-root-ca.crt` と書き換え済みの `setup-client.bat` を同じフォルダにまとめ、
 研究室内共有フォルダ等でWindows PCへ配布する。
 
 ## 9. Windows PC側のセットアップと接続確認
@@ -220,7 +220,7 @@ set HOST_IP=<サーバのLAN内IP>
 アクセスし、証明書エラーなくOutlineのログイン画面が表示されることを確認する。
 
 `setup-client.bat` はhostsに既にある同名エントリ（`127.0.0.1` 向けや旧IP向け）を削除してから
-`HOST_IP` の行を追記し直す（元のhostsは `hosts.chienami.bak` としてhostsと同じフォルダに退避される）。
+`HOST_IP` の行を追記し直す（元のhostsは `hosts.chiken.bak` としてhostsと同じフォルダに退避される）。
 そのためサーバのIPが変わった場合も、`HOST_IP` を書き換えたバッチを再実行すればよい。
 `HOST_IP` が初期値 `192.0.2.1` のままだとエラーで停止する。
 
@@ -233,7 +233,7 @@ macOS/Linuxクライアントの場合は、[reverse-proxy-setup.md](reverse-pro
 ## 10. 動作確認チェックリスト
 
 - [ ] `docker compose ps` で全サービスが起動していること
-- [ ] `/srv/chienami/data/outline/postgres` 等にデータが作られていること（4節）
+- [ ] `/srv/chiken/data/outline/postgres` 等にデータが作られていること（4節）
 - [ ] サーバ再起動後もコンテナが自動復帰すること（7節）
 - [ ] LAN内のWindows PCから `https://knowledge.lab.local/` に証明書エラーなくアクセスでき、
       Outlineのログイン画面が表示されること
@@ -246,7 +246,7 @@ macOS/Linuxクライアントの場合は、[reverse-proxy-setup.md](reverse-pro
 ## 11. 既知の制約・今後の課題
 
 - バックアップ・復元は未整備（Issue #16、保留中）。本手順のみでは障害時にデータを失う。
-- `/srv/chienami` 配置等の本番向けディレクトリ構成は正本データ（`/srv/chienami/data`、4節）のみ
+- `/srv/chiken` 配置等の本番向けディレクトリ構成は正本データ（`/srv/chiken/data`、4節）のみ
   適用済み。リポジトリはclone先に置き、検索索引・モデルキャッシュ・証明書はDocker named volumeで
   運用している。
 - サーバのLAN内IPが変わった場合、Windows PC側のhosts設定・ルートCA信頼は影響を受けない

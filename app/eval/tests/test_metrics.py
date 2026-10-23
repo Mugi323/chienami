@@ -1,4 +1,4 @@
-from chienami_eval.metrics import (
+from chiken_eval.metrics import (
     EvalCase,
     build_result,
     is_hit_at_k,
@@ -64,7 +64,7 @@ def test_mean_reciprocal_rank():
 
 # --- 答えのない質問・RAG評価（Phase 4） ---
 
-from chienami_eval.metrics import (  # noqa: E402
+from chiken_eval.metrics import (  # noqa: E402
     answerable,
     build_rag_result,
     summarize_rag,

@@ -2,7 +2,7 @@
 #
 # compose.yaml（本番・GPU構成）に重ねて使う:
 #   docker compose -f compose.yaml -f compose.cpu.yaml up -d
-# app/scripts/ のスクリプトは環境変数 CHIENAMI_CPU=1 でこのファイルを自動的に重ねる
+# app/scripts/ のスクリプトは環境変数 CHIKEN_CPU=1 でこのファイルを自動的に重ねる
 # （docs/design/cpu-dev-setup.md参照）。
 #
 # 目的はPhase 4（RAG）の結合動作確認であり、回答品質・速度の評価はGPU機で行う。

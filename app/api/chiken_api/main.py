@@ -1,4 +1,4 @@
-"""chienami-api エントリポイント。
+"""chiken-api エントリポイント。
 
 /search はLLMを使用せず、検索結果を返した時点で終了する（design書5.2節）。
 mode=semantic（既定, Phase 3）はDense検索のみ、mode=hybrid（Phase 4）は
@@ -37,7 +37,7 @@ from .reranker_client import RerankerClient
 from .search import SearchService, dedupe_chunks
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
-logger = logging.getLogger("chienami-api")
+logger = logging.getLogger("chiken-api")
 
 
 def _env(name: str, default: str | None = None, required: bool = False) -> str:
@@ -50,7 +50,7 @@ def _env(name: str, default: str | None = None, required: bool = False) -> str:
 EMBEDDING_URL = _env("EMBEDDING_URL", "http://embedding:80")
 QDRANT_URL = _env("QDRANT_URL", "http://qdrant:6333")
 QDRANT_API_KEY = _env("QDRANT_API_KEY", required=True)
-QDRANT_COLLECTION = _env("QDRANT_COLLECTION", "chienami_documents")
+QDRANT_COLLECTION = _env("QDRANT_COLLECTION", "chiken_documents")
 SEARCH_DEFAULT_LIMIT = int(_env("API_SEARCH_DEFAULT_LIMIT", "10"))
 SEARCH_MAX_LIMIT = int(_env("API_SEARCH_MAX_LIMIT", "50"))
 RERANKER_URL = _env("RERANKER_URL", "http://reranker:80")
@@ -73,14 +73,14 @@ OUTLINE_API_TOKEN = _env("OUTLINE_API_TOKEN")
 POINTS_PER_DOCUMENT = int(_env("POINTS_PER_DOCUMENT", "10"))
 POINTS_CHARACTERS_PER_POINT = int(_env("POINTS_CHARACTERS_PER_POINT", "100"))
 POINTS_CACHE_SECONDS = float(_env("POINTS_CACHE_SECONDS", "300"))
-# 招待リンク（Issue #81）。CHIENAMI_INVITE_API_TOKEN が未設定なら/invitationsのみ503。
+# 招待リンク（Issue #81）。CHIKEN_INVITE_API_TOKEN が未設定なら/invitationsのみ503。
 AUTHENTIK_INTERNAL_URL = _env("AUTHENTIK_INTERNAL_URL", "http://authentik-server:9000")
 AUTHENTIK_PUBLIC_URL = _env("AUTHENTIK_PUBLIC_URL", "https://auth.lab.local")
-INVITE_FLOW_SLUG = _env("INVITE_FLOW_SLUG", "chienami-invite-enrollment")
-CHIENAMI_INVITE_API_TOKEN = _env("CHIENAMI_INVITE_API_TOKEN")
+INVITE_FLOW_SLUG = _env("INVITE_FLOW_SLUG", "chiken-invite-enrollment")
+CHIKEN_INVITE_API_TOKEN = _env("CHIKEN_INVITE_API_TOKEN")
 INVITE_MAX_VALID_DAYS = 365
 
-app = FastAPI(title="Chienami API")
+app = FastAPI(title="Chiken API")
 
 qdrant_client = QdrantClient(url=QDRANT_URL, api_key=QDRANT_API_KEY)
 search_service = SearchService(qdrant_client, QDRANT_COLLECTION)
@@ -109,9 +109,9 @@ points_service = PointsService(
 )
 invitation_client = (
     AuthentikInvitationClient(
-        AUTHENTIK_INTERNAL_URL, CHIENAMI_INVITE_API_TOKEN, AUTHENTIK_PUBLIC_URL, INVITE_FLOW_SLUG
+        AUTHENTIK_INTERNAL_URL, CHIKEN_INVITE_API_TOKEN, AUTHENTIK_PUBLIC_URL, INVITE_FLOW_SLUG
     )
-    if CHIENAMI_INVITE_API_TOKEN
+    if CHIKEN_INVITE_API_TOKEN
     else None
 )
 

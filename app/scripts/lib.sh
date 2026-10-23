@@ -6,11 +6,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)"
 APP_DIR="$(dirname "$SCRIPT_DIR")"
 # shellcheck disable=SC2034  # setup.sh/start.sh/stop.sh から参照される
-CONFIG_DIR="${CHIENAMI_CONFIG_DIR:-$APP_DIR/config}"
+CONFIG_DIR="${CHIKEN_CONFIG_DIR:-$APP_DIR/config}"
 COMPOSE_FILE="$APP_DIR/compose.yaml"
-# GPU非搭載の開発機では CHIENAMI_CPU=1 でCPU用overrideを重ねる（Issue #55, docs/design/cpu-dev-setup.md）。
+# GPU非搭載の開発機では CHIKEN_CPU=1 でCPU用overrideを重ねる（Issue #55, docs/design/cpu-dev-setup.md）。
 COMPOSE_CPU_FILE="$APP_DIR/compose.cpu.yaml"
-# CHIENAMI_DATA_DIR（config/docker.env または環境変数）を設定すると、正本データの保存先を
+# CHIKEN_DATA_DIR（config/docker.env または環境変数）を設定すると、正本データの保存先を
 # そのディレクトリへ切り替えるoverrideを重ねる（Issue #76, docs/design/data-dir-setup.md）。
 COMPOSE_DATA_FILE="$APP_DIR/compose.data.yaml"
 
@@ -28,45 +28,45 @@ require_compose() {
   docker compose version >/dev/null 2>&1 || { log_error "docker compose (v2) が見つかりません"; exit 1; }
 }
 
-# CHIENAMI_DATA_DIR を決める。環境変数が設定されていればそれを優先し、無ければ config/docker.env の値を使う。
-# compose.data.yaml の ${CHIENAMI_DATA_DIR} 展開に使うため export する。
+# CHIKEN_DATA_DIR を決める。環境変数が設定されていればそれを優先し、無ければ config/docker.env の値を使う。
+# compose.data.yaml の ${CHIKEN_DATA_DIR} 展開に使うため export する。
 load_data_dir() {
-  if [[ -z "${CHIENAMI_DATA_DIR:-}" && -f "$CONFIG_DIR/docker.env" ]]; then
-    CHIENAMI_DATA_DIR="$(sed -n 's/^CHIENAMI_DATA_DIR=//p' "$CONFIG_DIR/docker.env" | tail -n 1)"
+  if [[ -z "${CHIKEN_DATA_DIR:-}" && -f "$CONFIG_DIR/docker.env" ]]; then
+    CHIKEN_DATA_DIR="$(sed -n 's/^CHIKEN_DATA_DIR=//p' "$CONFIG_DIR/docker.env" | tail -n 1)"
   fi
-  export CHIENAMI_DATA_DIR="${CHIENAMI_DATA_DIR:-}"
+  export CHIKEN_DATA_DIR="${CHIKEN_DATA_DIR:-}"
 }
 
 compose() {
   load_data_dir
   local files=(-f "$COMPOSE_FILE")
-  if [[ "${CHIENAMI_CPU:-}" == "1" ]]; then
+  if [[ "${CHIKEN_CPU:-}" == "1" ]]; then
     files+=(-f "$COMPOSE_CPU_FILE")
   fi
-  if [[ -n "${CHIENAMI_DATA_DIR:-}" ]]; then
-    [[ "$CHIENAMI_DATA_DIR" == /* ]] || { log_error "CHIENAMI_DATA_DIR は絶対パスで指定してください: $CHIENAMI_DATA_DIR"; exit 1; }
+  if [[ -n "${CHIKEN_DATA_DIR:-}" ]]; then
+    [[ "$CHIKEN_DATA_DIR" == /* ]] || { log_error "CHIKEN_DATA_DIR は絶対パスで指定してください: $CHIKEN_DATA_DIR"; exit 1; }
     files+=(-f "$COMPOSE_DATA_FILE")
   fi
   docker compose "${files[@]}" --project-directory "$APP_DIR" "$@"
 }
 
-# CHIENAMI_DATA_DIR 配下に正本データ用のディレクトリを作り、コンテナの実行ユーザーが書き込めるよう
+# CHIKEN_DATA_DIR 配下に正本データ用のディレクトリを作り、コンテナの実行ユーザーが書き込めるよう
 # 所有者を設定する（起動前に呼ぶ）。PostgreSQLは起動時に自分で所有者を直すため作成のみ行う。
 prepare_data_dir() {
   load_data_dir
-  [[ -n "${CHIENAMI_DATA_DIR:-}" ]] || return 0
+  [[ -n "${CHIKEN_DATA_DIR:-}" ]] || return 0
   local dir
   for dir in outline/storage outline/postgres authentik/postgres authentik/data; do
-    if ! mkdir -p "$CHIENAMI_DATA_DIR/$dir" 2>/dev/null; then
-      log_error "データディレクトリを作成できません: $CHIENAMI_DATA_DIR/$dir"
-      log_error "書き込み権限を付与してから再実行してください: sudo mkdir -p \"$CHIENAMI_DATA_DIR\" && sudo chown \"\$USER\" \"$CHIENAMI_DATA_DIR\""
+    if ! mkdir -p "$CHIKEN_DATA_DIR/$dir" 2>/dev/null; then
+      log_error "データディレクトリを作成できません: $CHIKEN_DATA_DIR/$dir"
+      log_error "書き込み権限を付与してから再実行してください: sudo mkdir -p \"$CHIKEN_DATA_DIR\" && sudo chown \"\$USER\" \"$CHIKEN_DATA_DIR\""
       exit 1
     fi
   done
   # UIDは各イメージの実行ユーザー（outline:1.10.0はnodejs=1001、authentik 2026.8.1はauthentik=1000）。
-  chown_data_dir outline /var/lib/outline/data "$CHIENAMI_DATA_DIR/outline/storage" 1001
-  chown_data_dir authentik-server /data "$CHIENAMI_DATA_DIR/authentik/data" 1000
-  log_info "正本データの保存先: $CHIENAMI_DATA_DIR"
+  chown_data_dir outline /var/lib/outline/data "$CHIKEN_DATA_DIR/outline/storage" 1001
+  chown_data_dir authentik-server /data "$CHIKEN_DATA_DIR/authentik/data" 1000
+  log_info "正本データの保存先: $CHIKEN_DATA_DIR"
 }
 
 # chown_data_dir SERVICE CONTAINER_PATH HOST_DIR UID: HOST_DIRの所有者がUIDでなければ、

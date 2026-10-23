@@ -1,7 +1,7 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "chienami.conversations.v1";
+  const STORAGE_KEY = "chiken.conversations.v1";
   const MAX_CONVERSATIONS = 50;
   const SNIPPET_MAX_LENGTH = 280;
   // /chatに会話の文脈として送る直近の発言数（質問と回答で1往復2件）。API側でも件数を絞る。

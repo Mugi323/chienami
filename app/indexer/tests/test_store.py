@@ -1,4 +1,4 @@
-from chienami_indexer.store import point_id
+from chiken_indexer.store import point_id
 
 
 def test_point_id_is_deterministic():
@@ -24,7 +24,7 @@ def test_point_id_is_valid_uuid_string():
 
 from types import SimpleNamespace  # noqa: E402
 
-from chienami_indexer.store import QdrantStore  # noqa: E402
+from chiken_indexer.store import QdrantStore  # noqa: E402
 
 
 class _FakeQdrant:

@@ -2,7 +2,7 @@
 
 Issue #14で追加したCaddyコンテナは、`knowledge.lab.local`（Outline）・`auth.lab.local`
 （Authentik）・`portal.lab.local`（Outline/Search選択画面, Issue #40）宛のリクエストを
-それぞれ内部のコンテナ・静的ファイルへ転送する。Chienami Search（Issue #36）・Chienami Points
+それぞれ内部のコンテナ・静的ファイルへ転送する。Chiken Search（Issue #36）・Chiken Points
 （Issue #77）は、hostsに書くホスト名を増やさないよう `portal.lab.local/search/`・
 `portal.lab.local/points/` にパスで配置している（Issue #90）。ただし、これらのホスト名は実在するドメインではないため、
 **名前解決の設定を別途行わないとどの端末からも `knowledge.lab.local` へアクセスできない**。
@@ -55,12 +55,12 @@ Caddyコンテナ起動後（初回HTTPS応答時にCAが生成される）、�
 
 ```bash
 cd app
-docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt > chienami-root-ca.crt
+docker compose exec caddy cat /data/caddy/pki/authorities/local/root.crt > chiken-root-ca.crt
 ```
 
 ### 3.2 配布物の作成
 
-`chienami-root-ca.crt` と `app/scripts/setup-client.bat`（Windows向け一括セットアップ
+`chiken-root-ca.crt` と `app/scripts/setup-client.bat`（Windows向け一括セットアップ
 スクリプト）をまとめて研究室内共有フォルダ等で配布する。
 
 ### 3.3 利用者側: セットアップ

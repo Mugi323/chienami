@@ -1,6 +1,6 @@
 import pytest
 
-from chienami_indexer.chunking import chunk_text
+from chiken_indexer.chunking import chunk_text
 
 
 def test_empty_text_returns_no_chunks():

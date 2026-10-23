@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY chienami_eval ./chienami_eval
+COPY chiken_eval ./chiken_eval
 
-ENTRYPOINT ["python", "-m", "chienami_eval.runner"]
+ENTRYPOINT ["python", "-m", "chiken_eval.runner"]
 CMD ["/app/questions.yaml"]

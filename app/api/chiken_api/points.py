@@ -18,7 +18,7 @@ from dataclasses import dataclass
 
 import httpx
 
-# indexer（chienami_indexer/outline_client.py）と同じ判定。
+# indexer（chiken_indexer/outline_client.py）と同じ判定。
 PUBLIC_PERMISSIONS = {"read", "read_write"}
 
 

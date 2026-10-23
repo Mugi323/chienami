@@ -15,7 +15,7 @@ from qdrant_client.http import models as qmodels
 # 再索引時に同じ文書・同じchunk_indexなら同じpoint IDになり、upsertで上書きされる。
 _POINT_NAMESPACE = uuid.UUID("d9b1c8b2-6e2b-4f2a-9a9d-2a6a6f3b7a10")
 
-# chienami-apiのKeyword検索が全文マッチに使うpayloadフィールド。
+# chiken-apiのKeyword検索が全文マッチに使うpayloadフィールド。
 TEXT_INDEX_FIELD = "text"
 
 

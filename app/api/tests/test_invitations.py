@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from chienami_api.invitations import AuthentikInvitationClient
+from chiken_api.invitations import AuthentikInvitationClient
 
 NOW = datetime(2026, 10, 15, 3, 0, tzinfo=UTC)
 FLOW_PK = "11111111-1111-1111-1111-111111111111"
@@ -16,7 +16,7 @@ def _invitation(pk, expires, single_use=False):
 
 def _client(handler):
     client = AuthentikInvitationClient(
-        "http://authentik", "token", "https://auth.lab.local/", "chienami-invite-enrollment"
+        "http://authentik", "token", "https://auth.lab.local/", "chiken-invite-enrollment"
     )
     client._client = httpx.Client(
         base_url="http://authentik/api/v3", transport=httpx.MockTransport(handler)
@@ -30,19 +30,19 @@ def test_create_posts_invitation_for_enrollment_flow():
     def handler(request: httpx.Request) -> httpx.Response:
         requests.append(request)
         if request.url.path == "/api/v3/flows/instances/":
-            assert request.url.params["slug"] == "chienami-invite-enrollment"
+            assert request.url.params["slug"] == "chiken-invite-enrollment"
             return httpx.Response(200, json={"results": [{"pk": FLOW_PK}]})
         body = json.loads(request.content)
         assert body["flow"] == FLOW_PK
         assert body["expires"] == "2026-10-22T03:00:00+00:00"
         assert body["single_use"] is True
-        assert body["name"].startswith("chienami-20261015-030000-")
+        assert body["name"].startswith("chiken-20261015-030000-")
         return httpx.Response(201, json=_invitation("abc", body["expires"], True))
 
     invitation = _client(handler).create(7, True, now=NOW)
 
     assert invitation.id == "abc"
-    assert invitation.url == "https://auth.lab.local/if/flow/chienami-invite-enrollment/?itoken=abc"
+    assert invitation.url == "https://auth.lab.local/if/flow/chiken-invite-enrollment/?itoken=abc"
     assert invitation.expires == datetime(2026, 10, 22, 3, 0, tzinfo=UTC)
     assert invitation.single_use is True
     assert [r.method for r in requests] == ["GET", "POST"]
@@ -58,7 +58,7 @@ def test_create_raises_when_flow_is_missing():
 
 def test_list_active_skips_expired_and_follows_pages():
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.params["flow__slug"] == "chienami-invite-enrollment"
+        assert request.url.params["flow__slug"] == "chiken-invite-enrollment"
         if request.url.params["page"] == "1":
             return httpx.Response(
                 200,

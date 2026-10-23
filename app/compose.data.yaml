@@ -1,32 +1,32 @@
 # 文書データの保存先を指定するためのoverride（Issue #76）。
 #
 # 失うと復元できない正本データ（Outlineの文書DB・添付ファイル、Authentikの利用者DB・データ）を、
-# named volumeではなく CHIENAMI_DATA_DIR 配下のホストディレクトリへ保存する
-# （本番では /srv/chienami/data を想定、docs/system_design_v1.4.md 4.2.1節）。
+# named volumeではなく CHIKEN_DATA_DIR 配下のホストディレクトリへ保存する
+# （本番では /srv/chiken/data を想定、docs/system_design_v1.4.md 4.2.1節）。
 # 検索索引（qdrant-data）・モデルキャッシュ・Caddyの証明書は再生成できるため対象外で、
 # 引き続きnamed volumeに置く。
 #
 # compose.yaml に重ねて使う。volumes はコンテナ側のパスが同じ要素が置き換わる:
-#   CHIENAMI_DATA_DIR=/srv/chienami/data docker compose -f compose.yaml -f compose.data.yaml up -d
-# app/scripts/ のスクリプトは CHIENAMI_DATA_DIR が config/docker.env（または環境変数）で設定されて
+#   CHIKEN_DATA_DIR=/srv/chiken/data docker compose -f compose.yaml -f compose.data.yaml up -d
+# app/scripts/ のスクリプトは CHIKEN_DATA_DIR が config/docker.env（または環境変数）で設定されて
 # いればこのファイルを自動的に重ね、起動前にディレクトリの作成と所有者の設定も行う（docs/design/data-dir-setup.md参照）。
 services:
   outline:
     volumes:
-      - ${CHIENAMI_DATA_DIR:?CHIENAMI_DATA_DIR を設定してください}/outline/storage:/var/lib/outline/data
+      - ${CHIKEN_DATA_DIR:?CHIKEN_DATA_DIR を設定してください}/outline/storage:/var/lib/outline/data
 
   postgres:
     volumes:
-      - ${CHIENAMI_DATA_DIR:?CHIENAMI_DATA_DIR を設定してください}/outline/postgres:/var/lib/postgresql
+      - ${CHIKEN_DATA_DIR:?CHIKEN_DATA_DIR を設定してください}/outline/postgres:/var/lib/postgresql
 
   authentik-postgres:
     volumes:
-      - ${CHIENAMI_DATA_DIR:?CHIENAMI_DATA_DIR を設定してください}/authentik/postgres:/var/lib/postgresql/data
+      - ${CHIKEN_DATA_DIR:?CHIKEN_DATA_DIR を設定してください}/authentik/postgres:/var/lib/postgresql/data
 
   authentik-server:
     volumes:
-      - ${CHIENAMI_DATA_DIR:?CHIENAMI_DATA_DIR を設定してください}/authentik/data:/data
+      - ${CHIKEN_DATA_DIR:?CHIKEN_DATA_DIR を設定してください}/authentik/data:/data
 
   authentik-worker:
     volumes:
-      - ${CHIENAMI_DATA_DIR:?CHIENAMI_DATA_DIR を設定してください}/authentik/data:/data
+      - ${CHIKEN_DATA_DIR:?CHIKEN_DATA_DIR を設定してください}/authentik/data:/data

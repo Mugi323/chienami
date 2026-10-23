@@ -3,7 +3,7 @@ import json
 import httpx
 import pytest
 
-from chienami_api.llm_client import LLMClient
+from chiken_api.llm_client import LLMClient
 
 
 def _client(handler, api_key="secret") -> LLMClient:

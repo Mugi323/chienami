@@ -1,6 +1,6 @@
 # 検索評価ツール（Recall@k / MRR）の使い方（Issue #38）
 
-`app/eval/` に追加した評価ツール。chienami-api（Issue #34）へ質問を投げ、正解として
+`app/eval/` に追加した評価ツール。chiken-api（Issue #34）へ質問を投げ、正解として
 指定したOutline文書URLが検索結果の何位に現れたかからRecall@k・MRRを計測する。
 
 design書11章の方針どおり、評価は「LLMの文章の上手さ」ではなく「必要な根拠文書を
@@ -17,7 +17,7 @@ design書11章の方針どおり、評価は「LLMの文章の上手さ」では
 1. `app/eval/questions.example.yaml` を `app/eval/questions.yaml` としてコピーする。
 2. 研究室の実際のOutline文書をもとに、20〜50問程度の「正解が分かっている質問」に
    差し替える。`expected_urls` には、その質問に対する正しい根拠文書のURL
-   （`https://knowledge.lab.local/doc/...`、chienami-indexerがQdrantへ格納するものと
+   （`https://knowledge.lab.local/doc/...`、chiken-indexerがQdrantへ格納するものと
    同じ形式）を1つ以上指定する。
 3. `questions.yaml` は `.gitignore` 対象ではない。研究室として質問セットを蓄積・
    バージョン管理したい場合はそのままコミットしてよい（実際の文書URLを含むため、
@@ -120,7 +120,7 @@ Chunking設定（`INDEXER_CHUNK_SIZE` / `INDEXER_CHUNK_OVERLAP`、[indexer-setup
 
 - Phase 4の比較・RAG評価（4節）も、ユニットテスト（API呼び出しはrespxでモック）のみ実施済み。
   実際の計測はGPU機で行う。
-- 本Issueの時点で実際のchienami-apiに対するend-to-end実行は未実施（開発環境にDockerが無く、
+- 本Issueの時点で実際のchiken-apiに対するend-to-end実行は未実施（開発環境にDockerが無く、
   評価対象の実文書も無いため）。ユニットテスト（`pytest`、API呼び出しはrespxでモック）
   のみ実施済み。
 - 正解判定はURLの完全一致。将来、部分一致や複数正解の重み付けなど評価方法を拡張する

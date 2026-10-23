@@ -212,7 +212,7 @@ services:
       retries: 10
       start_period: 180s
 
-  # --- chienami-indexer（Phase 3, Issue #32） ---
+  # --- chiken-indexer（Phase 3, Issue #32） ---
   # Outlineの「全員閲覧可Collection」の公開済み文書を定期的にEmbeddingし、Qdrantへ格納する
   # バックグラウンドプロセス（design書5.1節）。他サービスへ何も公開しないため expose/ports は無し。
   indexer:
@@ -228,7 +228,7 @@ services:
       outline:
         condition: service_started
 
-  # --- chienami-api（Phase 3検索API, Issue #34） ---
+  # --- chiken-api（Phase 3検索API, Issue #34） ---
   # クエリをEmbeddingしQdrantから検索するAPI。ブラウザ向けUI・Reverse Proxyでの外部公開は
   # Issue #4（検索UI）で行うため、本サービスは内部ネットワークのみ（ポートpublishなし）。
   api:
@@ -250,8 +250,8 @@ services:
       embedding:
         condition: service_healthy
 
-  # --- chienami-eval（検索・RAG評価ツール, Issue #38 / Phase 4） ---
-  # chienami-apiへ質問を投げてRecall@k/MRRを計測するオンデマンドツール。常駐サービスではない
+  # --- chiken-eval（検索・RAG評価ツール, Issue #38 / Phase 4） ---
+  # chiken-apiへ質問を投げてRecall@k/MRRを計測するオンデマンドツール。常駐サービスではない
   # ため profiles で通常の `docker compose up -d` には含めず、`docker compose run --rm eval`
   # で明示的に実行する（詳細: docs/design/search-eval-setup.md）。
   eval:
@@ -265,8 +265,8 @@ services:
 
   # --- Reverse Proxy（研究室LAN内アクセス, Issue #14 / HTTPS化, Issue #26） ---
   # knowledge.lab.local -> Outline、auth.lab.local -> Authentik、
-  # portal.lab.local -> Chienami ポータル（Outline/Search選択画面, Issue #40）
-  # （/search/ 配下は Chienami Search（Issue #36, #90）、/points/ 配下は Chienami Points（Issue #77））
+  # portal.lab.local -> Chiken ポータル（Outline/Search選択画面, Issue #40）
+  # （/search/ 配下は Chiken Search（Issue #36, #90）、/points/ 配下は Chiken Points（Issue #77））
   # へルーティングする。Caddy内部CAでHTTPS化し、80番はHTTPSへのリダイレクト専用
   # （自動HTTPS機能）として使う。ホストのファイアウォールでLAN外からの80/443番アクセスを
   # 遮断すること（研究室LANからのみ許可、docs/design/reverse-proxy-setup.md参照）。

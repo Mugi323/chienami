@@ -25,11 +25,11 @@ GPUのない開発機では、CPU用のoverride `app/compose.cpu.yaml` を重ね
 
 ## 起動・停止
 
-`app/scripts/` のスクリプトは、環境変数 `CHIENAMI_CPU=1` を付けるとoverrideを自動で重ねる。
+`app/scripts/` のスクリプトは、環境変数 `CHIKEN_CPU=1` を付けるとoverrideを自動で重ねる。
 
 ```bash
-CHIENAMI_CPU=1 ./app/scripts/start.sh
-CHIENAMI_CPU=1 ./app/scripts/stop.sh
+CHIKEN_CPU=1 ./app/scripts/start.sh
+CHIKEN_CPU=1 ./app/scripts/stop.sh
 ```
 
 docker composeを直接使う場合:
@@ -39,7 +39,7 @@ cd app
 docker compose -f compose.yaml -f compose.cpu.yaml up -d
 ```
 
-`CHIENAMI_CPU` を付けない場合は、従来どおりGPU構成で起動する。
+`CHIKEN_CPU` を付けない場合は、従来どおりGPU構成で起動する。
 
 ## メモリが足りない場合（AI系だけ起動する）
 

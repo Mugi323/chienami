@@ -54,7 +54,7 @@
   // APIのエラーを管理者向けの文言にする。403はログインし直しで直ることが多い。
   function errorMessage(resp, action) {
     if (resp.status === 403) return `${action}できませんでした。ページを再読み込みしてログインし直してください。`;
-    if (resp.status === 503) return `${action}できませんでした。サーバに CHIENAMI_INVITE_API_TOKEN が設定されていません。`;
+    if (resp.status === 503) return `${action}できませんでした。サーバに CHIKEN_INVITE_API_TOKEN が設定されていません。`;
     return `${action}できませんでした。時間をおいて再度お試しください。`;
   }
 

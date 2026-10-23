@@ -1,7 +1,7 @@
 import httpx
 import pytest
 
-from chienami_api.reranker_client import RerankerClient
+from chiken_api.reranker_client import RerankerClient
 
 
 def _client(handler) -> RerankerClient:
